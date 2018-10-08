@@ -1,4 +1,4 @@
-// echo server
+package com.baitforbyte.networkhw1.master;// echo server
 
 import java.io.IOException;
 import java.net.Inet4Address;

@@ -1,3 +1,5 @@
+package com.baitforbyte.networkhw1.follower;
+
 import java.util.Scanner;
 
 public class Main

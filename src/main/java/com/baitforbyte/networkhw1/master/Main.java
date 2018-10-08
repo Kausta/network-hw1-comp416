@@ -1,3 +1,5 @@
+package com.baitforbyte.networkhw1.master;
+
 public class Main
 {
     public static void main(String[] args)
