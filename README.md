@@ -1,7 +1,7 @@
 # Network Homework 1 - DriveCloud
 
 Comp 416 HW1 DriveCloud project preapared by: 
-- Cuneyt Yavuz
+- Cüneyt Emre Yavuz
 - Alper Toygar
 - Caner Korkmaz
 
