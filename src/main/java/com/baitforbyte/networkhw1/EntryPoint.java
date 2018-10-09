@@ -2,8 +2,8 @@ package com.baitforbyte.networkhw1;
 
 import com.baitforbyte.networkhw1.follower.FollowerApplication;
 import com.baitforbyte.networkhw1.master.MasterApplication;
-import com.baitforbyte.networkhw1.shared.ApplicationMode;
-import com.baitforbyte.networkhw1.shared.Input;
+import com.baitforbyte.networkhw1.shared.util.ApplicationMode;
+import com.baitforbyte.networkhw1.shared.util.Input;
 
 import java.util.Scanner;
 
@@ -65,10 +65,11 @@ public class EntryPoint {
      * Runs the master application by getting a port
      */
     public void runMaster() {
-        int port = Input.getInstance().getPort();
+        int port = Input.getInstance().getPort("Port number: ");
+        int filePort = Input.getInstance().getPort("File transmission port number: ");
         System.out.println("Starting in port: " + port);
 
-        MasterApplication application = new MasterApplication(port);
+        MasterApplication application = new MasterApplication(port, filePort);
         application.run();
     }
 
@@ -77,11 +78,12 @@ public class EntryPoint {
      */
     public void runFollower() {
         String ip = Input.getInstance().getIp();
-        int port = Input.getInstance().getPort();
+        int port = Input.getInstance().getPort("Port number: ");
+        int filePort = Input.getInstance().getPort("File transmission port number: ");
 
         System.out.println("Connecting to " + ip + ":" + "port");
 
-        FollowerApplication application = new FollowerApplication(ip, port);
+        FollowerApplication application = new FollowerApplication(ip, port, filePort);
         application.run();
     }
 }

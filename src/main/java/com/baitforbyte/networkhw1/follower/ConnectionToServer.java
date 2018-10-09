@@ -1,6 +1,7 @@
 package com.baitforbyte.networkhw1.follower;
 
-import com.baitforbyte.networkhw1.follower.base.BaseClient;
+import com.baitforbyte.networkhw1.shared.base.BaseClient;
+import com.baitforbyte.networkhw1.shared.file.IFileClient;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -19,14 +20,15 @@ public class ConnectionToServer extends BaseClient {
 
     protected BufferedReader is;
     protected PrintWriter os;
-    private Socket s;
+    private IFileClient client;
 
     /**
      * @param address IP address of the server, if you are running the server on the same computer as client, put the address as "localhost"
      * @param port    port number of the server
      */
-    public ConnectionToServer(String address, int port) {
+    public ConnectionToServer(String address, int port, IFileClient fileClient) {
         super(address, port);
+        this.client = fileClient;
     }
 
     /**
@@ -36,8 +38,8 @@ public class ConnectionToServer extends BaseClient {
     public void connect() {
         super.connect();
         try {
-            is = new BufferedReader(new InputStreamReader(s.getInputStream()));
-            os = new PrintWriter(s.getOutputStream());
+            is = new BufferedReader(new InputStreamReader(getSocket().getInputStream()));
+            os = new PrintWriter(getSocket().getOutputStream());
         } catch (IOException e) {
             e.printStackTrace();
         }
