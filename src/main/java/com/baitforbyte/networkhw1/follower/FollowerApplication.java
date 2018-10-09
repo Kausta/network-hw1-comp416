@@ -11,8 +11,8 @@ public class FollowerApplication {
 
     public void run() {
         ConnectionToServer connectionToServer = new ConnectionToServer(ip, port);
-        connectionToServer.Connect();
+        connectionToServer.connect();
 
-        connectionToServer.Disconnect();
+        connectionToServer.disconnect();
     }
 }
