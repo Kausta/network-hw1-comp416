@@ -15,7 +15,7 @@ public class EntryPoint {
 
     /**
      * EntryPoint Constructor
-     *
+     * <p>
      * Creates the input scanner and sets it to Input helper
      */
     public EntryPoint() {
@@ -25,6 +25,7 @@ public class EntryPoint {
 
     /**
      * Main method creating and running EntryPoint class
+     *
      * @param args Command line args, none for now
      */
     public static void main(String[] args) {

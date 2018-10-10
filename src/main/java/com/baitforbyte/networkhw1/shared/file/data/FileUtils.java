@@ -1,4 +1,4 @@
-package com.baitforbyte.networkhw1.shared.file;
+package com.baitforbyte.networkhw1.shared.file.data;
 
 import java.io.*;
 import java.nio.file.FileSystems;
@@ -13,8 +13,9 @@ public final class FileUtils {
 
     /**
      * Reads all bytes from the given file and records it in a FileTransmissionModel
+     *
      * @param directory File directory
-     * @param filename File name
+     * @param filename  File name
      * @return Bytes of the read file together with length and file name
      * @throws FileTransmissionException Thrown when an IOException occurs
      */
@@ -29,7 +30,8 @@ public final class FileUtils {
 
     /**
      * Write a FileTransmissionModel to an output stream
-     * @param os Output stream
+     *
+     * @param os    Output stream
      * @param model File Data
      * @throws FileTransmissionException Thrown when an IOException occurs
      */
@@ -43,6 +45,7 @@ public final class FileUtils {
 
     /**
      * Tries to read a FileTransmissionModel from the given stream
+     *
      * @param is Stream to read from
      * @return Read file data
      * @throws FileTransmissionException Thrown when an IOException occurs or the read class is not FileTransmissionModel
@@ -50,10 +53,10 @@ public final class FileUtils {
     public static FileTransmissionModel readFromStream(InputStream is) throws FileTransmissionException {
         try (ObjectInputStream stream = new ObjectInputStream(is)) {
             Object object = stream.readObject();
-            if(object == null) {
+            if (object == null) {
                 return null;
             }
-            if(object instanceof FileTransmissionModel) {
+            if (object instanceof FileTransmissionModel) {
                 return (FileTransmissionModel) object;
             }
             throw new ClassNotFoundException("Unexpected class: " + object.getClass().getName());

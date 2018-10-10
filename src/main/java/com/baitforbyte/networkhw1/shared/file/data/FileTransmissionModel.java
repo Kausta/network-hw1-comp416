@@ -1,4 +1,4 @@
-package com.baitforbyte.networkhw1.shared.file;
+package com.baitforbyte.networkhw1.shared.file.data;
 
 import java.io.Serializable;
 
