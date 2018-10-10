@@ -1,6 +1,8 @@
 package com.baitforbyte.networkhw1.shared.file.data;
 
 public class FileTransmissionException extends Exception {
+    private static final long serialVersionUID = 1L;
+
     public FileTransmissionException() {
     }
 
