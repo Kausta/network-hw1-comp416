@@ -1,4 +1,4 @@
-package com.baitforbyte.networkhw1.shared;
+package com.baitforbyte.networkhw1.shared.util;
 
 /**
  * Application Mode

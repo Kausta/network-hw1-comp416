@@ -1,12 +1,12 @@
 package com.baitforbyte.networkhw1.follower;
 
-import com.baitforbyte.networkhw1.follower.base.BaseClient;
+import com.baitforbyte.networkhw1.shared.base.BaseClient;
+import com.baitforbyte.networkhw1.shared.file.follower.IFileClient;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -19,28 +19,25 @@ public class ConnectionToServer extends BaseClient {
 
     protected BufferedReader is;
     protected PrintWriter os;
-    private Socket s;
+    private IFileClient client;
 
     /**
      * @param address IP address of the server, if you are running the server on the same computer as client, put the address as "localhost"
      * @param port    port number of the server
      */
-    public ConnectionToServer(String address, int port) {
+    public ConnectionToServer(String address, int port, IFileClient fileClient) {
         super(address, port);
+        this.client = fileClient;
     }
 
     /**
      * Establishes a socket connection to the server that is identified by the serverAddress and the serverPort
      */
     @Override
-    public void connect() {
+    public void connect() throws IOException {
         super.connect();
-        try {
-            is = new BufferedReader(new InputStreamReader(s.getInputStream()));
-            os = new PrintWriter(s.getOutputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        is = new BufferedReader(new InputStreamReader(getSocket().getInputStream()));
+        os = new PrintWriter(getSocket().getOutputStream());
     }
 
     /**
@@ -49,22 +46,17 @@ public class ConnectionToServer extends BaseClient {
      * @param message input message string to the server
      * @return the received server answer
      */
-    public String sendForAnswer(String message) {
+    public String sendForAnswer(String message) throws IOException {
         String response = "";
-        try {
             /*
             Sends the message to the server via PrintWriter
              */
-            os.println(message);
-            os.flush();
+        os.println(message);
+        os.flush();
             /*
             Reads a line from the server via Buffer Reader
              */
-            response = is.readLine();
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("ConnectionToServer. SendForAnswer. Socket read Error");
-        }
+        response = is.readLine();
         return response;
     }
 
@@ -73,14 +65,11 @@ public class ConnectionToServer extends BaseClient {
      * Disconnects the socket and closes the buffers
      */
     @Override
-    public void disconnect() {
-        try {
-            is.close();
-            os.close();
-            System.out.println("ConnectionToServer. SendForAnswer. Connection Closed");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void disconnect() throws IOException {
+        is.close();
+        os.close();
+        System.out.println("ConnectionToServer. SendForAnswer. Connection Closed");
+
         super.disconnect();
     }
 
@@ -89,23 +78,20 @@ public class ConnectionToServer extends BaseClient {
      *
      * @return the recieved filename, hash and last change times
      */
-    public HashMap<String, FileData> getHash(){
+    public HashMap<String, FileData> getHash() throws IOException {
         HashMap<String, FileData> files = new HashMap<String, FileData>();
         os.println(GET_HASH_MESSAGE);
         os.flush();
-        try {
-            int numberOfLines = Integer.parseInt(is.readLine()) * 3;
-            for (int i = 0; i < numberOfLines; i++){
-                String fileName = is.readLine();
-                String hash = is.readLine();
-                String date = is.readLine();
-                FileData data = new FileData(hash, Long.parseLong(date));
-                files.put(fileName, data);
-            }
-        } catch (IOException e) {
-            System.out.println("The connection failed");
-            disconnect();
+
+        int numberOfLines = Integer.parseInt(is.readLine()) * 3;
+        for (int i = 0; i < numberOfLines; i++) {
+            String fileName = is.readLine();
+            String hash = is.readLine();
+            String date = is.readLine();
+            FileData data = new FileData(hash, Long.parseLong(date));
+            files.put(fileName, data);
         }
+
         return files;
     }
 
@@ -114,26 +100,26 @@ public class ConnectionToServer extends BaseClient {
      *
      * @param files hashmap of filenames, hashes and dates
      */
-    public void compareHash(HashMap<String, FileData> files){
+    public void compareHash(HashMap<String, FileData> files) {
         ArrayList<String> filesToSend = new ArrayList<String>();
         ArrayList<String> filesToRequest = new ArrayList<String>();
         HashMap<String, FileData> localFiles = getLocalFiles();
         for (String fileName : files.keySet()) {
-            if(localFiles.containsKey(fileName)){
+            if (localFiles.containsKey(fileName)) {
                 FileData local = localFiles.get(fileName);
                 FileData remote = files.get(fileName);
-                if (local.hash.equals(remote.hash)){
+                if (local.hash.equals(remote.hash)) {
                     continue;
-                }else{
+                } else {
                     long dateDiff = local.lastChangeTime - remote.lastChangeTime;
-                    if (dateDiff > 0){
+                    if (dateDiff > 0) {
                         filesToSend.add(fileName);
-                    }else if (dateDiff < 0){
+                    } else if (dateDiff < 0) {
                         filesToRequest.add(fileName);
                     }
                 }
                 localFiles.remove(fileName);
-            }else{
+            } else {
                 filesToRequest.add(fileName);
             }
         }
@@ -144,7 +130,7 @@ public class ConnectionToServer extends BaseClient {
         // TODO: send files
     }
 
-    public HashMap<String, FileData> getLocalFiles(){
+    public HashMap<String, FileData> getLocalFiles() {
         return null; // TODO: implement
     }
 

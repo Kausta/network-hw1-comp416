@@ -1,5 +1,7 @@
 package com.baitforbyte.networkhw1.master;
 
+import com.baitforbyte.networkhw1.shared.file.master.IFileServerThread;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -9,16 +11,18 @@ import java.net.Socket;
 class ServerThread extends Thread {
     protected BufferedReader is;
     protected PrintWriter os;
+    private final IFileServerThread fsThread;
     protected Socket s;
-    private String line = new String();
+    private String line = "";
 
     /**
      * Creates a server thread on the input socket
      *
      * @param s input socket to create a thread on
      */
-    public ServerThread(Socket s) {
+    public ServerThread(Socket s, IFileServerThread fsThread) {
         this.s = s;
+        this.fsThread = fsThread;
     }
 
     /**
@@ -63,6 +67,9 @@ class ServerThread extends Thread {
                 if (s != null) {
                     s.close();
                     System.err.println("Socket Closed");
+                }
+                if(fsThread != null) {
+                    fsThread.interrupt();
                 }
 
             } catch (IOException ie) {
