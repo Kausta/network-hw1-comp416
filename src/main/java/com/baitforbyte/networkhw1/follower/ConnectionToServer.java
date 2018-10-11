@@ -5,6 +5,7 @@ import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionException;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.follower.IFileClient;
+import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 
 import java.io.*;
 import java.security.NoSuchAlgorithmException;
@@ -26,16 +27,16 @@ public class ConnectionToServer extends BaseClient {
     protected BufferedReader is;
     protected PrintWriter os;
     private IFileClient client;
-    private File directory;
+    private String directory;
 
     /**
      * @param address IP address of the server, if you are running the server on the same computer as client, put the address as "localhost"
      * @param port    port number of the server
      */
-    public ConnectionToServer(String address, int port, IFileClient fileClient, String directoryName) {
+    public ConnectionToServer(String address, int port, IFileClient fileClient) {
         super(address, port);
         this.client = fileClient;
-        this.directory = new File(directoryName);
+        this.directory = DirectoryUtils.getDirectoryInDesktop("CloudDrive");
     }
 
     public void startWorking() throws IOException, NoSuchAlgorithmException {

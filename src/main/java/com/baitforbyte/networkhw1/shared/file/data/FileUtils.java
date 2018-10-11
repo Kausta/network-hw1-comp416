@@ -17,14 +17,17 @@ public final class FileUtils {
     /**
      * Get file transmission models for the files in the directory
      *
-     * @param directory File directory
+     * @param directoryPath File directory
      * @return All the files in the directory
      * @throws NullPointerException if directory is null, not found or not a directory
      */
-    public static FileTransmissionModel[] getAllFilesInDirectory(File directory) throws FileTransmissionException {
+    public static FileTransmissionModel[] getAllFilesInDirectory(String directoryPath) throws FileTransmissionException {
+        File directory = new File(directoryPath);
         // Directory should not be null
         Objects.requireNonNull(directory);
-        final String directoryPath = directory.getPath();
+        if(!directory.isDirectory()) {
+            throw new FileTransmissionException("Not a directory");
+        }
 
         final File[] files = directory.listFiles();
         // Files should not be null

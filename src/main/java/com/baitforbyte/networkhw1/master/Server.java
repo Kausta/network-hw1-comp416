@@ -7,6 +7,7 @@ import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.FileServerThread;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
+import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,7 +18,7 @@ import java.util.HashMap;
 
 public class Server extends BaseServer {
     private IFileServer fileServer;
-    private File directory;
+    private String directory;
 
     /**
      * Initiates a server socket on the input port, listens to the line, on receiving an incoming
@@ -25,10 +26,10 @@ public class Server extends BaseServer {
      *
      * @param port Server port
      */
-    public Server(int port, IFileServer fileServer, String directoryPath) throws IOException {
+    public Server(int port, IFileServer fileServer) throws IOException {
         super(port);
         this.fileServer = fileServer;
-        directory = new File(directoryPath);
+        this.directory = DirectoryUtils.getDirectoryInDesktop("CloudDrive");
     }
 
     /**

@@ -9,10 +9,9 @@ public class MasterApplication {
     private int filePort;
     private String directoryPath;
 
-    public MasterApplication(int port, int filePort, String directoryPath) {
+    public MasterApplication(int port, int filePort) {
         this.port = port;
         this.filePort = filePort;
-        this.directoryPath = directoryPath;
     }
 
     public void run() {
@@ -20,7 +19,7 @@ public class MasterApplication {
         Server server = null;
         try {
             fsServer = new FileServer(filePort);
-            server = new Server(port, fsServer, directoryPath);
+            server = new Server(port, fsServer);
         } catch (IOException ex) {
             ex.printStackTrace();
             System.out.println("Cannot open the sockets, exiting");

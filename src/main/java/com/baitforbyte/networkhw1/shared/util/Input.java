@@ -125,29 +125,6 @@ public final class Input {
     }
 
     /**
-     * Gets the port number from the user
-     *
-     * @return Valid port number
-     */
-    public String getDirectory(String message) {
-        while (true) {
-            try {
-                System.out.print(message);
-                String dir = input.nextLine();
-                boolean correct = Files.exists(new File(dir).toPath());
-                if (correct) {
-                    return dir;
-                } else {
-                    throw new IOException("Directory not found");
-                }
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-            }
-
-        }
-    }
-
-    /**
      * Parses entered mode by looking to lowercase version of the first character
      *
      * @param modeStr Entered mode

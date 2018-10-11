@@ -68,10 +68,9 @@ public class EntryPoint {
     public void runMaster() {
         int port = Input.getInstance().getPort("Port number: ");
         int filePort = Input.getInstance().getPort("File transmission port number: ");
-        String dirLocation = Input.getInstance().getDirectory("Directory absolute location: ");
         System.out.println("Starting in port: " + port);
 
-        MasterApplication application = new MasterApplication(port, filePort, dirLocation);
+        MasterApplication application = new MasterApplication(port, filePort);
         application.run();
     }
 
@@ -82,10 +81,9 @@ public class EntryPoint {
         String ip = Input.getInstance().getIp();
         int port = Input.getInstance().getPort("Port number: ");
         int filePort = Input.getInstance().getPort("File transmission port number: ");
-        String dirLocation = Input.getInstance().getDirectory("Directory absolute location: ");
         System.out.println("Connecting to " + ip + ":" + "port");
 
-        FollowerApplication application = new FollowerApplication(ip, port, filePort, dirLocation);
+        FollowerApplication application = new FollowerApplication(ip, port, filePort);
         application.run();
     }
 }
