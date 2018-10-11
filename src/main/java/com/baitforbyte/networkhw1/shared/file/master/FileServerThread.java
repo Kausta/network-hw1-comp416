@@ -1,6 +1,5 @@
 package com.baitforbyte.networkhw1.shared.file.master;
 
-import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionException;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.follower.FileClient;
 

@@ -134,16 +134,16 @@ public final class Input {
             try {
                 System.out.print(message);
                 String dir = input.nextLine();
-                boolean correct =  Files.exists(new File(dir).toPath());
-                if (correct){
+                boolean correct = Files.exists(new File(dir).toPath());
+                if (correct) {
                     return dir;
-                }else{
+                } else {
                     throw new IOException("Directory not found");
                 }
             } catch (IOException e) {
                 System.out.println(e.getMessage());
             }
-                
+
         }
     }
 

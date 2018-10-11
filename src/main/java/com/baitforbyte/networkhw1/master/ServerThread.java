@@ -9,9 +9,9 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 class ServerThread extends Thread {
+    private final IFileServerThread fsThread;
     protected BufferedReader is;
     protected PrintWriter os;
-    private final IFileServerThread fsThread;
     protected Socket s;
     private String line = "";
 
@@ -68,7 +68,7 @@ class ServerThread extends Thread {
                     s.close();
                     System.err.println("Socket Closed");
                 }
-                if(fsThread != null) {
+                if (fsThread != null) {
                     fsThread.interrupt();
                 }
 

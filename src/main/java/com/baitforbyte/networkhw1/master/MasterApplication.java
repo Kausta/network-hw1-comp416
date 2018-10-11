@@ -8,6 +8,7 @@ public class MasterApplication {
     private int port;
     private int filePort;
     private String directoryPath;
+
     public MasterApplication(int port, int filePort, String directoryPath) {
         this.port = port;
         this.filePort = filePort;

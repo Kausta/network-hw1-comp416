@@ -164,7 +164,7 @@ public class ConnectionToServer extends BaseClient {
      * Gets local files in the designated folder
      *
      * @return Hashmap of files, hashes and last changed times
-     * @throws IOException When a file reading exception occurs
+     * @throws IOException              When a file reading exception occurs
      * @throws NoSuchAlgorithmException When hash function is not found, should not occur with the algorithms we use
      */
     private HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {

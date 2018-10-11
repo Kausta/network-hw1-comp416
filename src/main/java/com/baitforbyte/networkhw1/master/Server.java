@@ -1,14 +1,5 @@
 package com.baitforbyte.networkhw1.master;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.Socket;
-import java.nio.file.Files;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
-import java.util.HashMap;
-
 import com.baitforbyte.networkhw1.follower.FileData;
 import com.baitforbyte.networkhw1.shared.base.BaseServer;
 import com.baitforbyte.networkhw1.shared.base.ConnectionException;
@@ -16,6 +7,12 @@ import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.FileServerThread;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.Socket;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 
 
 public class Server extends BaseServer {
@@ -46,7 +43,7 @@ public class Server extends BaseServer {
         FileServerThread fsThread = fileServer.listenAndAccept();
         Socket fsSocket = fsThread.getSocket();
 
-        if(!fsSocket.getInetAddress().equals(s.getInetAddress())) {
+        if (!fsSocket.getInetAddress().equals(s.getInetAddress())) {
             // TODO: Solve this issue
             // TODO: Detect which file server thread is which file server's
             throw new ConnectionException("Different clients connected to server and file server, error");
@@ -57,11 +54,12 @@ public class Server extends BaseServer {
     }
 
     // TODO: Maybe should be in server thread ?
+
     /**
      * Gets local files in the designated folder
      *
      * @return Hashmap of files, hashes and last changed times
-     * @throws IOException When a file reading exception occurs
+     * @throws IOException              When a file reading exception occurs
      * @throws NoSuchAlgorithmException When hash function is not found, should not occur with the algorithms we use
      */
     private HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {

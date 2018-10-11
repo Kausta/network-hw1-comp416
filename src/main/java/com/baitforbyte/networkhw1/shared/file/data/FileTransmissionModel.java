@@ -59,6 +59,7 @@ public class FileTransmissionModel implements Serializable {
 
     /**
      * Get hash code of the file using the hash type from ApplicationConfiguration
+     *
      * @return File Hash Code
      * @throws NoSuchAlgorithmException When the algorithm is not found, note that MD5, SHA-1 and SHA-256 are always found
      */
