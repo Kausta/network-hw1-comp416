@@ -3,7 +3,8 @@ package com.baitforbyte.networkhw1.shared.util;
 import java.nio.file.Paths;
 
 public final class DirectoryUtils {
-    private DirectoryUtils() {}
+    private DirectoryUtils() {
+    }
 
     public static String getHomeDirectory() {
         return System.getProperty("user.home");

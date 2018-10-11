@@ -13,9 +13,10 @@ public class FileServerThread extends IFileServerThread {
     private final Socket s;
     private final FileClient client;
 
-    public FileServerThread(Socket s) {
+    public FileServerThread(Socket s) throws IOException {
         this.s = s;
         this.client = new FileClient(s);
+        client.connect();
     }
 
     public Socket getSocket() {

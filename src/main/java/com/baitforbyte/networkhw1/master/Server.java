@@ -1,19 +1,13 @@
 package com.baitforbyte.networkhw1.master;
 
-import com.baitforbyte.networkhw1.follower.FileData;
 import com.baitforbyte.networkhw1.shared.base.BaseServer;
 import com.baitforbyte.networkhw1.shared.base.ConnectionException;
-import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
-import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.FileServerThread;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
 import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
 
 
 public class Server extends BaseServer {
@@ -50,9 +44,9 @@ public class Server extends BaseServer {
             throw new ConnectionException("Different clients connected to server and file server, error");
         }
 
-        ServerThread st = new ServerThread(s, fsThread);
+        ServerThread st = new ServerThread(s, fsThread, directory);
         st.start();
     }
-    
+
 }
 

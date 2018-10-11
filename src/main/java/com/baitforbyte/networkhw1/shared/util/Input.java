@@ -1,9 +1,6 @@
 package com.baitforbyte.networkhw1.shared.util;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.InetAddress;
-import java.nio.file.Files;
 import java.util.Scanner;
 
 /**
@@ -95,8 +92,8 @@ public final class Input {
      *
      * @return Application Mode
      */
-    public ApplicationMode getApplicationMode() {
-        ApplicationMode mode = null;
+    public ApplicationMode getApplicationMode(String arg) {
+        ApplicationMode mode = arg != null ? parseMode(arg) : null;
         while (mode == null) {
             System.out.print("Please choose application mode: ( [M]aster, [F]ollower ): ");
             mode = parseMode(input.nextLine());

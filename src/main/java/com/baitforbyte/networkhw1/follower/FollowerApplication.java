@@ -25,7 +25,7 @@ public class FollowerApplication {
             connectionToServer = new ConnectionToServer(ip, port, fileClient);
             connectionToServer.connect();
 
-            while(true){
+            while (true) {
                 Thread.sleep(5);
             }
         } catch (IOException ex) {

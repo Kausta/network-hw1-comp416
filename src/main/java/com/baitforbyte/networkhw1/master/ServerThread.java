@@ -1,7 +1,11 @@
 package com.baitforbyte.networkhw1.master;
 
+import com.baitforbyte.networkhw1.follower.FileData;
+import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
+import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
+import com.baitforbyte.networkhw1.shared.file.master.IFileServerThread;
+
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -9,27 +13,23 @@ import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 
-import com.baitforbyte.networkhw1.follower.FileData;
-import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
-import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
-import com.baitforbyte.networkhw1.shared.file.master.IFileServerThread;
-
 class ServerThread extends Thread {
     private final IFileServerThread fsThread;
     protected BufferedReader is;
     protected PrintWriter os;
     protected Socket s;
     private String line = "";
-    private File directory;
+    private String directory;
 
     /**
      * Creates a server thread on the input socket
      *
      * @param s input socket to create a thread on
      */
-    public ServerThread(Socket s, IFileServerThread fsThread) {
+    public ServerThread(Socket s, IFileServerThread fsThread, String directory) {
         this.s = s;
         this.fsThread = fsThread;
+        this.directory = directory;
     }
 
     /**
@@ -45,29 +45,42 @@ class ServerThread extends Thread {
         }
 
         try {
-            line = is.readLine();
             while (line.compareTo("QUIT") != 0) {
-
-                System.out.println("Client " + s.getRemoteSocketAddress() + " sent : " + line);
                 line = is.readLine();
-                if(line.startsWith("SEND")){
-                    FileTransmissionModel f = fsThread.getModelFromPath(directory.toPath().toString(), line.substring(4));
+                System.out.println("Client " + s.getRemoteSocketAddress() + " sent : " + line);
+                if (line.startsWith("SENDFILE")) {
+                    FileTransmissionModel f = fsThread.getModelFromPath(directory, line.substring(8));
                     fsThread.sendFile(f);
-                }else if(line.startsWith("CORRECT")){
-                    os.write("CORRECT");
-                }else if(line.startsWith("SENDING")){
-                    os.write("SEND");
-                }else if(line.startsWith("HASH")){
+                    sendToClient(f.getHash());
+                } else if (line.startsWith("CORRECT")) {
+                    sendToClient("CORRECT");
+                } else if (line.startsWith("SENDING")) {
+                    sendToClient("SEND");
+                    FileTransmissionModel f = fsThread.tryReceiveFile();
+                    sendToClient(f.getHash());
+                    String answer = is.readLine();
+                    if (answer.equals("CORRECT")) {
+                        sendToClient("CORRECT");
+                        fsThread.writeModelToPath(directory, f);
+                    }
+                } else if (line.startsWith("HASH")) {
                     HashMap<String, FileData> files = getLocalFiles();
-                    os.write(files.size());
+                    sendToClient("" + files.size());
+                    for (String fileName : files.keySet()) {
+                        FileData file = files.get(fileName);
+
+                        sendToClient(fileName);
+                        sendToClient(file.getHash());
+                        sendToClient("" + file.getLastChangeTime());
+                    }
                 }
             }
         } catch (IOException e) {
-            line = this.getName(); //reused String line for getting thread name
-            System.err.println("Server Thread. Run. IO Error/ Client " + line + " terminated abruptly");
+            e.printStackTrace();
+            System.err.println("Server Thread. Run. IO Error/ Client " + getName() + " terminated abruptly");
         } catch (NullPointerException e) {
-            line = this.getName(); //reused String line for getting thread name
-            System.err.println("Server Thread. Run.Client " + line + " Closed");
+            e.getMessage();
+            System.err.println("Server Thread. Run.Client " + getName() + " Closed");
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         } finally {
@@ -95,7 +108,7 @@ class ServerThread extends Thread {
             }
         }//end finally
 
-        
+
     }
 
     /**
@@ -113,5 +126,11 @@ class ServerThread extends Thread {
             files.put(file.getFilename(), new FileData(file.getHash(), file.getLastModifiedTimestamp()));
         }
         return files;
+    }
+
+    private void sendToClient(String s) {
+        System.out.println("Send " + s);
+        os.write(s + "\n");
+        os.flush();
     }
 }
