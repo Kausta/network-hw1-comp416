@@ -12,6 +12,8 @@ import java.util.HashMap;
 import com.baitforbyte.networkhw1.follower.FileData;
 import com.baitforbyte.networkhw1.shared.base.BaseServer;
 import com.baitforbyte.networkhw1.shared.base.ConnectionException;
+import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
+import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.FileServerThread;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
 
@@ -54,35 +56,22 @@ public class Server extends BaseServer {
         st.start();
     }
 
+    // TODO: Maybe should be in server thread ?
     /**
      * Gets local files in the designated folder
-     * @return Hashmap of files, hashes and last changed times 
-     * @throws IOException
-     * @throws NoSuchAlgorithmException
+     *
+     * @return Hashmap of files, hashes and last changed times
+     * @throws IOException When a file reading exception occurs
+     * @throws NoSuchAlgorithmException When hash function is not found, should not occur with the algorithms we use
      */
-    public HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {
-        HashMap<String, FileData> files = new HashMap<String, FileData>();
-        for (File file : directory.listFiles()) {
-            byte[] data = Files.readAllBytes(file.toPath());
-            String name = file.getName();
-            String hash = getHash(data);
-            long time = file.lastModified();
-            FileData fileData = new FileData(hash, time);
-            files.put(name, fileData);
+    private HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {
+        HashMap<String, FileData> files = new HashMap<>();
+        FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
+
+        for (FileTransmissionModel file : fileModels) {
+            files.put(file.getFilename(), new FileData(file.getHash(), file.getLastModifiedTimestamp()));
         }
         return files;
-    }
-
-    /**
-     * Gets the hash of a file
-     * @param file byte array of the file
-     * @return hash as string
-     * @throws NoSuchAlgorithmException
-     */
-    public String getHash(byte[] file) throws NoSuchAlgorithmException {
-        MessageDigest md = MessageDigest.getInstance("SHA-256");
-        byte[] hash = md.digest();
-        return new String(Base64.getEncoder().encode(hash));
     }
 }
 

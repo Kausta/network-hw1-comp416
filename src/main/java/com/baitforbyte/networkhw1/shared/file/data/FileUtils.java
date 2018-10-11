@@ -3,12 +3,36 @@ package com.baitforbyte.networkhw1.shared.file.data;
 import java.io.*;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Objects;
 
 /**
  * Utility class for reading and writing file data to files or network streams
  */
 public final class FileUtils {
     private FileUtils() {
+    }
+
+    /**
+     * Get file transmission models for the files in the directory
+     * @param directory File directory
+     * @return All the files in the directory
+     * @throws NullPointerException if directory is null, not found or not a directory
+     */
+    public static FileTransmissionModel[] getAllFilesInDirectory(File directory) throws FileTransmissionException {
+        // Directory should not be null
+        Objects.requireNonNull(directory);
+        final String directoryPath = directory.getPath();
+
+        final File[] files = directory.listFiles();
+        // Files should not be null
+        Objects.requireNonNull(files);
+
+        final FileTransmissionModel[] models = new FileTransmissionModel[files.length];
+        for(int i = 0;i < files.length;i++) {
+            models[i] = readAllBytes(directoryPath, files[i].getName());
+        }
+        return models;
     }
 
     /**
@@ -21,8 +45,10 @@ public final class FileUtils {
      */
     public static FileTransmissionModel readAllBytes(String directory, String filename) throws FileTransmissionException {
         try {
-            byte[] bytes = Files.readAllBytes(FileSystems.getDefault().getPath(directory, filename));
-            return new FileTransmissionModel(filename, bytes.length, bytes);
+            final Path path = FileSystems.getDefault().getPath(directory, filename);
+            byte[] bytes = Files.readAllBytes(path);
+            long timestamp = Files.getLastModifiedTime(path).toMillis();
+            return new FileTransmissionModel(filename, bytes.length, bytes, timestamp);
         } catch (IOException ex) {
             throw new FileTransmissionException("Error occurred while reading file " + filename + ": " + ex.getMessage(), ex);
         }
