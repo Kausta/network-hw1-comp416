@@ -15,7 +15,7 @@ public class EntryPoint {
 
     /**
      * EntryPoint Constructor
-     *
+     * <p>
      * Creates the input scanner and sets it to Input helper
      */
     public EntryPoint() {
@@ -25,6 +25,7 @@ public class EntryPoint {
 
     /**
      * Main method creating and running EntryPoint class
+     *
      * @param args Command line args, none for now
      */
     public static void main(String[] args) {
@@ -67,9 +68,10 @@ public class EntryPoint {
     public void runMaster() {
         int port = Input.getInstance().getPort("Port number: ");
         int filePort = Input.getInstance().getPort("File transmission port number: ");
+        String dirLocation = Input.getInstance().getDirectory("Directory absolute location: ");
         System.out.println("Starting in port: " + port);
 
-        MasterApplication application = new MasterApplication(port, filePort);
+        MasterApplication application = new MasterApplication(port, filePort, dirLocation);
         application.run();
     }
 
@@ -80,10 +82,10 @@ public class EntryPoint {
         String ip = Input.getInstance().getIp();
         int port = Input.getInstance().getPort("Port number: ");
         int filePort = Input.getInstance().getPort("File transmission port number: ");
-
+        String dirLocation = Input.getInstance().getDirectory("Directory absolute location: ");
         System.out.println("Connecting to " + ip + ":" + "port");
 
-        FollowerApplication application = new FollowerApplication(ip, port, filePort);
+        FollowerApplication application = new FollowerApplication(ip, port, filePort, dirLocation);
         application.run();
     }
 }

@@ -1,6 +1,9 @@
 package com.baitforbyte.networkhw1.shared.util;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
+import java.nio.file.Files;
 import java.util.Scanner;
 
 /**
@@ -15,6 +18,7 @@ public final class Input {
 
     /**
      * Returns the input helper singleton instance
+     *
      * @return Input helper instance
      */
     public static Input getInstance() {
@@ -30,6 +34,7 @@ public final class Input {
 
     /**
      * Gets a valid ip address
+     *
      * @return Valid Ip address from user
      */
     public String getIp() {
@@ -46,6 +51,7 @@ public final class Input {
 
     /**
      * Sets the scanner for usage inside helper
+     *
      * @param input Scanner
      */
     public void setScanner(Scanner input) {
@@ -54,6 +60,7 @@ public final class Input {
 
     /**
      * Validates ip address using InetAddress class from java
+     *
      * @param ip Ip address entered by user
      * @return Validated ip address
      */
@@ -72,6 +79,7 @@ public final class Input {
 
     /**
      * Validates port by checking if it is out of bounds
+     *
      * @param port Port number entered by the user
      * @return Validated port number
      */
@@ -84,6 +92,7 @@ public final class Input {
 
     /**
      * Gets the application mode as master or follower from user
+     *
      * @return Application Mode
      */
     public ApplicationMode getApplicationMode() {
@@ -100,6 +109,7 @@ public final class Input {
 
     /**
      * Gets the port number from the user
+     *
      * @return Valid port number
      */
     public int getPort(String message) {
@@ -115,7 +125,31 @@ public final class Input {
     }
 
     /**
+     * Gets the port number from the user
+     *
+     * @return Valid port number
+     */
+    public String getDirectory(String message) {
+        while (true) {
+            try {
+                System.out.print(message);
+                String dir = input.nextLine();
+                boolean correct = Files.exists(new File(dir).toPath());
+                if (correct) {
+                    return dir;
+                } else {
+                    throw new IOException("Directory not found");
+                }
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
+
+        }
+    }
+
+    /**
      * Parses entered mode by looking to lowercase version of the first character
+     *
      * @param modeStr Entered mode
      * @return Parsed mode
      */
