@@ -1,6 +1,5 @@
 package com.baitforbyte.networkhw1.shared.file.master;
 
-import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionException;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.follower.FileClient;
 
@@ -35,17 +34,22 @@ public class FileServerThread extends IFileServerThread {
     }
 
     @Override
-    public FileTransmissionModel tryReceiveFile() throws IOException, FileTransmissionException {
+    public FileTransmissionModel tryReceiveFile() throws IOException {
         return client.tryReceiveFile();
     }
 
     @Override
-    public void writeFile(FileTransmissionModel model) throws IOException, FileTransmissionException {
-        client.writeFile(model);
+    public void sendFile(FileTransmissionModel model) throws IOException {
+        client.sendFile(model);
     }
 
     @Override
-    public FileTransmissionModel getModelFromPath(String directory, String filename) throws FileTransmissionException {
+    public FileTransmissionModel getModelFromPath(String directory, String filename) throws IOException {
         return client.getModelFromPath(directory, filename);
+    }
+
+    @Override
+    public void writeModelToPath(String directory, FileTransmissionModel model) throws IOException {
+        client.writeModelToPath(directory, model);
     }
 }

@@ -1,6 +1,8 @@
 package com.baitforbyte.networkhw1.shared.file.data;
 
-public class FileTransmissionException extends Exception {
+import java.io.IOException;
+
+public class FileTransmissionException extends IOException {
     private static final long serialVersionUID = 1L;
 
     public FileTransmissionException() {
@@ -16,9 +18,5 @@ public class FileTransmissionException extends Exception {
 
     public FileTransmissionException(Throwable cause) {
         super(cause);
-    }
-
-    public FileTransmissionException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
     }
 }

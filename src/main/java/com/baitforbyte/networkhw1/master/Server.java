@@ -1,19 +1,18 @@
 package com.baitforbyte.networkhw1.master;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.Socket;
-import java.nio.file.Files;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
-import java.util.HashMap;
-
 import com.baitforbyte.networkhw1.follower.FileData;
 import com.baitforbyte.networkhw1.shared.base.BaseServer;
 import com.baitforbyte.networkhw1.shared.base.ConnectionException;
+import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
+import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.FileServerThread;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.Socket;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 
 
 public class Server extends BaseServer {
@@ -44,7 +43,7 @@ public class Server extends BaseServer {
         FileServerThread fsThread = fileServer.listenAndAccept();
         Socket fsSocket = fsThread.getSocket();
 
-        if(!fsSocket.getInetAddress().equals(s.getInetAddress())) {
+        if (!fsSocket.getInetAddress().equals(s.getInetAddress())) {
             // TODO: Solve this issue
             // TODO: Detect which file server thread is which file server's
             throw new ConnectionException("Different clients connected to server and file server, error");
@@ -54,35 +53,23 @@ public class Server extends BaseServer {
         st.start();
     }
 
-    /**
-     * Gets local files in the designated folder
-     * @return Hashmap of files, hashes and last changed times 
-     * @throws IOException
-     * @throws NoSuchAlgorithmException
-     */
-    public HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {
-        HashMap<String, FileData> files = new HashMap<String, FileData>();
-        for (File file : directory.listFiles()) {
-            byte[] data = Files.readAllBytes(file.toPath());
-            String name = file.getName();
-            String hash = getHash(data);
-            long time = file.lastModified();
-            FileData fileData = new FileData(hash, time);
-            files.put(name, fileData);
-        }
-        return files;
-    }
+    // TODO: Maybe should be in server thread ?
 
     /**
-     * Gets the hash of a file
-     * @param file byte array of the file
-     * @return hash as string
-     * @throws NoSuchAlgorithmException
+     * Gets local files in the designated folder
+     *
+     * @return Hashmap of files, hashes and last changed times
+     * @throws IOException              When a file reading exception occurs
+     * @throws NoSuchAlgorithmException When hash function is not found, should not occur with the algorithms we use
      */
-    public String getHash(byte[] file) throws NoSuchAlgorithmException {
-        MessageDigest md = MessageDigest.getInstance("SHA-256");
-        byte[] hash = md.digest();
-        return new String(Base64.getEncoder().encode(hash));
+    private HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {
+        HashMap<String, FileData> files = new HashMap<>();
+        FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
+
+        for (FileTransmissionModel file : fileModels) {
+            files.put(file.getFilename(), new FileData(file.getHash(), file.getLastModifiedTimestamp()));
+        }
+        return files;
     }
 }
 

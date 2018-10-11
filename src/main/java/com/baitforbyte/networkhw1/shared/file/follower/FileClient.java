@@ -51,7 +51,7 @@ public class FileClient extends BaseClient implements IFileClient {
      * @throws FileTransmissionException Throws FileTransferException if cannot read file from the socket
      */
     @Override
-    public FileTransmissionModel tryReceiveFile() throws IOException, FileTransmissionException {
+    public FileTransmissionModel tryReceiveFile() throws IOException {
         validateConnection();
 
         return FileUtils.readFromStream(this.is);
@@ -63,9 +63,10 @@ public class FileClient extends BaseClient implements IFileClient {
      * @param model File data to write
      * @throws IOException               Throws IOException if not connected
      * @throws FileTransmissionException Throws FileTransferException if cannot write file to the socket
+     * @throws NullPointerException      Throws NullPointerException if the model is null
      */
     @Override
-    public void writeFile(FileTransmissionModel model) throws IOException, FileTransmissionException {
+    public void sendFile(FileTransmissionModel model) throws IOException {
         Objects.requireNonNull(model);
         validateConnection();
 
@@ -81,8 +82,23 @@ public class FileClient extends BaseClient implements IFileClient {
      * @throws FileTransmissionException if cannot read the file data
      */
     @Override
-    public FileTransmissionModel getModelFromPath(String directory, String filename) throws FileTransmissionException {
+    public FileTransmissionModel getModelFromPath(String directory, String filename) throws IOException {
         return FileUtils.readAllBytes(directory, filename);
+    }
+
+    /**
+     * Write the FileTransmissionModel to the given directory
+     *
+     * @param directory File Directory
+     * @param model     File Model containing bytes and filename
+     * @throws FileTransmissionException if cannot read the file data
+     * @throws NullPointerException      if the model is null
+     */
+    @Override
+    public void writeModelToPath(String directory, FileTransmissionModel model) throws IOException {
+        Objects.requireNonNull(model);
+
+        FileUtils.writeAllBytes(directory, model);
     }
 
     @Override
