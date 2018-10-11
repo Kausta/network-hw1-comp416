@@ -11,6 +11,7 @@ import java.io.*;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -20,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  */
 
 public class ConnectionToServer extends BaseClient {
-    private static final String GET_HASH_MESSAGE = "Send hashes";
+    private static final String GET_HASH_MESSAGE = "HASH";
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -42,6 +43,7 @@ public class ConnectionToServer extends BaseClient {
     public void startWorking() throws IOException, NoSuchAlgorithmException {
         HashMap<String, FileData> files = getHash();
         compareHash(files);
+
     }
 
     /**
@@ -102,10 +104,9 @@ public class ConnectionToServer extends BaseClient {
      */
     public HashMap<String, FileData> getHash() throws IOException {
         HashMap<String, FileData> files = new HashMap<String, FileData>();
-        os.println(GET_HASH_MESSAGE);
-        os.flush();
+        String number = sendForAnswer(GET_HASH_MESSAGE);
 
-        int numberOfLines = Integer.parseInt(is.readLine()) * 3;
+        int numberOfLines = Integer.parseInt(number) * 3;
         for (int i = 0; i < numberOfLines; i++) {
             String fileName = is.readLine();
             String hash = is.readLine();
@@ -152,13 +153,33 @@ public class ConnectionToServer extends BaseClient {
         for (String fileName : localFiles.keySet()) {
             filesToSend.add(fileName);
         }
-        // TODO: request files
         for (String fileName : filesToRequest) {
-            sendForAnswer("SEND" + fileName);
-            //FileTransmissionModel f = client.tryReceiveFile();
-            // TODO: Finish
+            String response = "";
+            FileTransmissionModel f = null;
+            while(!response.equals("CORRECT")){
+                String hash = sendForAnswer("SEND" + fileName);
+                f = client.tryReceiveFile();
+                if (f != null && hash.equals(f.getHash())){
+                    response = sendForAnswer("CORRECT");
+                }
+            }   
+            client.writeModelToPath(directory.toPath().toString(), f);
         }
-        // TODO: send files
+        
+        for (String fileName : filesToSend) {
+            String response = "";
+            FileTransmissionModel f = client.getModelFromPath(directory.toPath().toString(), fileName);
+            while(!response.equals("CORRECT")){
+                response = sendForAnswer("SENDING");
+                if(response.equals("SEND")){
+                    client.sendFile(f);
+                    response = is.readLine();
+                    if (Objects.equals(response, "CORRECT")){
+                        os.write("CORRECT");
+                    }
+                }
+            }
+        }
     }
 
     /**

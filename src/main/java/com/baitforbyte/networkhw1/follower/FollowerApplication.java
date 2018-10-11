@@ -25,9 +25,13 @@ public class FollowerApplication {
             connectionToServer = new ConnectionToServer(ip, port, fileClient);
             connectionToServer.connect();
 
-            // TODO: Start loop
+            while(true){
+                Thread.sleep(5);
+            }
         } catch (IOException ex) {
             ex.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         } finally {
             try {
                 if (connectionToServer != null) {

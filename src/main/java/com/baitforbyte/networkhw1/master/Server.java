@@ -53,24 +53,6 @@ public class Server extends BaseServer {
         ServerThread st = new ServerThread(s, fsThread);
         st.start();
     }
-
-    // TODO: Maybe should be in server thread ?
-
-    /**
-     * Gets local files in the designated folder
-     *
-     * @return Hashmap of files, hashes and last changed times
-     * @throws IOException              When a file reading exception occurs
-     * @throws NoSuchAlgorithmException When hash function is not found, should not occur with the algorithms we use
-     */
-    private HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {
-        HashMap<String, FileData> files = new HashMap<>();
-        FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
-
-        for (FileTransmissionModel file : fileModels) {
-            files.put(file.getFilename(), new FileData(file.getHash(), file.getLastModifiedTimestamp()));
-        }
-        return files;
-    }
+    
 }
 

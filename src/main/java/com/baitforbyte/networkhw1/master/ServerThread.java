@@ -1,12 +1,18 @@
 package com.baitforbyte.networkhw1.master;
 
-import com.baitforbyte.networkhw1.shared.file.master.IFileServerThread;
-
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+
+import com.baitforbyte.networkhw1.follower.FileData;
+import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
+import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
+import com.baitforbyte.networkhw1.shared.file.master.IFileServerThread;
 
 class ServerThread extends Thread {
     private final IFileServerThread fsThread;
@@ -14,6 +20,7 @@ class ServerThread extends Thread {
     protected PrintWriter os;
     protected Socket s;
     private String line = "";
+    private File directory;
 
     /**
      * Creates a server thread on the input socket
@@ -41,10 +48,19 @@ class ServerThread extends Thread {
             line = is.readLine();
             while (line.compareTo("QUIT") != 0) {
 
-                os.println(line);
-                os.flush();
                 System.out.println("Client " + s.getRemoteSocketAddress() + " sent : " + line);
                 line = is.readLine();
+                if(line.startsWith("SEND")){
+                    FileTransmissionModel f = fsThread.getModelFromPath(directory.toPath().toString(), line.substring(4));
+                    fsThread.sendFile(f);
+                }else if(line.startsWith("CORRECT")){
+                    os.write("CORRECT");
+                }else if(line.startsWith("SENDING")){
+                    os.write("SEND");
+                }else if(line.startsWith("HASH")){
+                    HashMap<String, FileData> files = getLocalFiles();
+                    os.write(files.size());
+                }
             }
         } catch (IOException e) {
             line = this.getName(); //reused String line for getting thread name
@@ -52,6 +68,8 @@ class ServerThread extends Thread {
         } catch (NullPointerException e) {
             line = this.getName(); //reused String line for getting thread name
             System.err.println("Server Thread. Run.Client " + line + " Closed");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
         } finally {
             try {
                 System.out.println("Closing the connection");
@@ -76,5 +94,24 @@ class ServerThread extends Thread {
                 System.err.println("Socket Close Error");
             }
         }//end finally
+
+        
+    }
+
+    /**
+     * Gets local files in the designated folder
+     *
+     * @return Hashmap of files, hashes and last changed times
+     * @throws IOException              When a file reading exception occurs
+     * @throws NoSuchAlgorithmException When hash function is not found, should not occur with the algorithms we use
+     */
+    private HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {
+        HashMap<String, FileData> files = new HashMap<>();
+        FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
+
+        for (FileTransmissionModel file : fileModels) {
+            files.put(file.getFilename(), new FileData(file.getHash(), file.getLastModifiedTimestamp()));
+        }
+        return files;
     }
 }
