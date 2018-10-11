@@ -1,16 +1,24 @@
 package com.baitforbyte.networkhw1.master;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.Socket;
+import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
+import java.util.HashMap;
+
+import com.baitforbyte.networkhw1.follower.FileData;
 import com.baitforbyte.networkhw1.shared.base.BaseServer;
 import com.baitforbyte.networkhw1.shared.base.ConnectionException;
 import com.baitforbyte.networkhw1.shared.file.master.FileServerThread;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
 
-import java.io.IOException;
-import java.net.Socket;
-
 
 public class Server extends BaseServer {
     private IFileServer fileServer;
+    private File directory;
 
     /**
      * Initiates a server socket on the input port, listens to the line, on receiving an incoming
@@ -18,9 +26,10 @@ public class Server extends BaseServer {
      *
      * @param port Server port
      */
-    public Server(int port, IFileServer fileServer) throws IOException {
+    public Server(int port, IFileServer fileServer, String directoryPath) throws IOException {
         super(port);
         this.fileServer = fileServer;
+        directory = new File(directoryPath);
     }
 
     /**
@@ -43,6 +52,37 @@ public class Server extends BaseServer {
 
         ServerThread st = new ServerThread(s, fsThread);
         st.start();
+    }
+
+    /**
+     * Gets local files in the designated folder
+     * @return Hashmap of files, hashes and last changed times 
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
+    public HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {
+        HashMap<String, FileData> files = new HashMap<String, FileData>();
+        for (File file : directory.listFiles()) {
+            byte[] data = Files.readAllBytes(file.toPath());
+            String name = file.getName();
+            String hash = getHash(data);
+            long time = file.lastModified();
+            FileData fileData = new FileData(hash, time);
+            files.put(name, fileData);
+        }
+        return files;
+    }
+
+    /**
+     * Gets the hash of a file
+     * @param file byte array of the file
+     * @return hash as string
+     * @throws NoSuchAlgorithmException
+     */
+    public String getHash(byte[] file) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        byte[] hash = md.digest();
+        return new String(Base64.getEncoder().encode(hash));
     }
 }
 

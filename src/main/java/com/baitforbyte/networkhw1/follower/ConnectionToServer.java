@@ -1,14 +1,21 @@
 package com.baitforbyte.networkhw1.follower;
 
 import com.baitforbyte.networkhw1.shared.base.BaseClient;
+import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionException;
+import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.follower.IFileClient;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
+import java.util.concurrent.*;
+import java.security.*;
 
 /**
  * Created by Yahya Hassanzadeh on 20/09/2017.
@@ -17,17 +24,26 @@ import java.util.HashMap;
 public class ConnectionToServer extends BaseClient {
     private static final String GET_HASH_MESSAGE = "Send hashes";
 
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    
     protected BufferedReader is;
     protected PrintWriter os;
     private IFileClient client;
+    private File directory;
 
     /**
      * @param address IP address of the server, if you are running the server on the same computer as client, put the address as "localhost"
      * @param port    port number of the server
      */
-    public ConnectionToServer(String address, int port, IFileClient fileClient) {
+    public ConnectionToServer(String address, int port, IFileClient fileClient, String directoryName) {
         super(address, port);
         this.client = fileClient;
+        this.directory = new File(directoryName);
+    }
+
+    public void startWorking() throws IOException, NoSuchAlgorithmException, FileTransmissionException {
+        HashMap<String, FileData> files = getHash();
+        compareHash(files);
     }
 
     /**
@@ -38,6 +54,14 @@ public class ConnectionToServer extends BaseClient {
         super.connect();
         is = new BufferedReader(new InputStreamReader(getSocket().getInputStream()));
         os = new PrintWriter(getSocket().getOutputStream());
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                startWorking();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, 0, 30, TimeUnit.SECONDS);
+
     }
 
     /**
@@ -96,11 +120,15 @@ public class ConnectionToServer extends BaseClient {
     }
 
     /**
-     * compares hashes of local and remote files then calls send and recieve functions
+     * compares hashes of local and remote files then calls send and recieve
+     * functions
      *
      * @param files hashmap of filenames, hashes and dates
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     * @throws FileTransmissionException
      */
-    public void compareHash(HashMap<String, FileData> files) {
+    public void compareHash(HashMap<String, FileData> files) throws NoSuchAlgorithmException, IOException, FileTransmissionException {
         ArrayList<String> filesToSend = new ArrayList<String>();
         ArrayList<String> filesToRequest = new ArrayList<String>();
         HashMap<String, FileData> localFiles = getLocalFiles();
@@ -127,11 +155,43 @@ public class ConnectionToServer extends BaseClient {
             filesToSend.add(fileName);
         }
         // TODO: request files
+        for (String fileName : filesToRequest) {
+            sendForAnswer("SEND" + fileName);
+            //FileTransmissionModel f = client.tryReceiveFile();
+            // TODO: Finish
+        }
         // TODO: send files
     }
 
-    public HashMap<String, FileData> getLocalFiles() {
-        return null; // TODO: implement
+    /**
+     * Gets local files in the designated folder
+     * @return Hashmap of files, hashes and last changed times 
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
+    public HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {
+        HashMap<String, FileData> files = new HashMap<String, FileData>();
+        for (File file : directory.listFiles()) {
+            byte[] data = Files.readAllBytes(file.toPath());
+            String name = file.getName();
+            String hash = getHash(data);
+            long time = file.lastModified();
+            FileData fileData = new FileData(hash, time);
+            files.put(name, fileData);
+        }
+        return files;
+    }
+
+    /**
+     * Gets the hash of a file
+     * @param file byte array of the file
+     * @return hash as string
+     * @throws NoSuchAlgorithmException
+     */
+    public String getHash(byte[] file) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        byte[] hash = md.digest();
+        return new String(Base64.getEncoder().encode(hash));
     }
 
 
