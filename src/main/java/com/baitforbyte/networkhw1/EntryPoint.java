@@ -1,18 +1,37 @@
 package com.baitforbyte.networkhw1;
 
-import com.baitforbyte.networkhw1.shared.ApplicationMode;
+import com.baitforbyte.networkhw1.follower.FollowerApplication;
+import com.baitforbyte.networkhw1.master.MasterApplication;
+import com.baitforbyte.networkhw1.shared.util.ApplicationMode;
+import com.baitforbyte.networkhw1.shared.util.Input;
 
 import java.util.Scanner;
 
+/**
+ * DriveCloud Application Entry Point
+ */
 public class EntryPoint {
     private Scanner input;
+    private String[] args;
 
-    public EntryPoint() {
+    /**
+     * EntryPoint Constructor
+     * <p>
+     * Creates the input scanner and sets it to Input helper
+     */
+    public EntryPoint(String[] args) {
         input = new Scanner(System.in);
+        Input.getInstance().setScanner(input);
+        this.args = args;
     }
 
+    /**
+     * Main method creating and running EntryPoint class
+     *
+     * @param args Command line args, none for now
+     */
     public static void main(String[] args) {
-        EntryPoint app = new EntryPoint();
+        EntryPoint app = new EntryPoint(args);
         try {
             app.run();
         } finally {
@@ -20,39 +39,69 @@ public class EntryPoint {
         }
     }
 
+    /**
+     * Gets the application mode and runs runMaster or runFollower
+     */
     public void run() {
         System.out.println("===  Welcome to DriveCloud   ===");
         System.out.println("===  We sync all your files  ===");
         System.out.println("================================");
         System.out.println();
-        ApplicationMode mode = getApplicationMode();
-        while (mode == null) {
-            System.out.println("You entered an invalid mode.");
-            mode = getApplicationMode();
-        }
-        System.out.println("Starting in " + (mode == ApplicationMode.MASTER ? "master" : "follower") + " mode ...");
-        // TODO: Start the application
-    }
+        ApplicationMode mode = Input.getInstance().getApplicationMode(args.length > 0 ? args[0] : null);
 
-    private ApplicationMode getApplicationMode() {
-        System.out.println("Please choose application mode: ( [M]aster, [F]ollower ): ");
-        return parseMode(input.nextLine());
+        System.out.println("Starting in " + mode.name().toLowerCase() + " mode ...");
+        switch (mode) {
+            case MASTER:
+                this.runMaster();
+                break;
+            case FOLLOWER:
+                this.runFollower();
+                break;
+        }
     }
 
     public Scanner getInput() {
         return input;
     }
 
-    private ApplicationMode parseMode(String modeStr) {
-        if (modeStr.length() < 1)
-            return null;
-        switch (modeStr.toLowerCase().charAt(0)) {
-            case 'm':
-                return ApplicationMode.MASTER;
-            case 'f':
-                return ApplicationMode.FOLLOWER;
-            default:
-                return null;
+    /**
+     * Runs the master application by getting a port
+     */
+    public void runMaster() {
+        int port;
+        int filePort;
+        if (args.length > 2) {
+            port = Integer.parseInt(args[1]);
+            filePort = Integer.parseInt(args[2]);
+        } else {
+            port = Input.getInstance().getPort("Port number: ");
+            filePort = Input.getInstance().getPort("File transmission port number: ");
         }
+        System.out.println("Starting in port: " + port);
+
+        MasterApplication application = new MasterApplication(port, filePort);
+        application.run();
+    }
+
+    /**
+     * Runs the follower application by getting an ip and a port
+     */
+    public void runFollower() {
+        String ip;
+        int port;
+        int filePort;
+        if (args.length > 3) {
+            ip = args[1];
+            port = Integer.parseInt(args[2]);
+            filePort = Integer.parseInt(args[3]);
+        } else {
+            ip = Input.getInstance().getIp();
+            port = Input.getInstance().getPort("Port number: ");
+            filePort = Input.getInstance().getPort("File transmission port number: ");
+        }
+        System.out.println("Connecting to " + ip + ":" + port + "");
+
+        FollowerApplication application = new FollowerApplication(ip, port, filePort);
+        application.run();
     }
 }
