@@ -35,7 +35,7 @@ public abstract class BaseClient {
      */
     public void connect() throws IOException {
         if (s != null) {
-            throw new ConnectionException("Previous socket is still open, please disconnect first");
+            return;
         }
         try {
             s = new Socket(serverAddress, serverPort);

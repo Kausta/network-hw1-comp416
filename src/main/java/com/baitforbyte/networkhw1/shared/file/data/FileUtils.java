@@ -1,6 +1,9 @@
 package com.baitforbyte.networkhw1.shared.file.data;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,14 +20,17 @@ public final class FileUtils {
     /**
      * Get file transmission models for the files in the directory
      *
-     * @param directory File directory
+     * @param directoryPath File directory
      * @return All the files in the directory
      * @throws NullPointerException if directory is null, not found or not a directory
      */
-    public static FileTransmissionModel[] getAllFilesInDirectory(File directory) throws FileTransmissionException {
+    public static FileTransmissionModel[] getAllFilesInDirectory(String directoryPath) throws FileTransmissionException {
+        File directory = new File(directoryPath);
         // Directory should not be null
         Objects.requireNonNull(directory);
-        final String directoryPath = directory.getPath();
+        if (!directory.isDirectory()) {
+            throw new FileTransmissionException("Not a directory");
+        }
 
         final File[] files = directory.listFiles();
         // Files should not be null
@@ -63,9 +69,10 @@ public final class FileUtils {
      * @param model File Data
      * @throws FileTransmissionException Thrown when an IOException occurs
      */
-    public static void writeToStream(OutputStream os, FileTransmissionModel model) throws FileTransmissionException {
-        try (ObjectOutputStream stream = new ObjectOutputStream(os)) {
-            stream.writeObject(model);
+    public static void writeToStream(ObjectOutputStream os, FileTransmissionModel model) throws FileTransmissionException {
+        try {
+            os.writeObject(model);
+            os.flush();
         } catch (IOException ex) {
             throw new FileTransmissionException("Error occurred while writing file to the stream: " + ex.getMessage(), ex);
         }
@@ -78,9 +85,9 @@ public final class FileUtils {
      * @return Read file data
      * @throws FileTransmissionException Thrown when an IOException occurs or the read class is not FileTransmissionModel
      */
-    public static FileTransmissionModel readFromStream(InputStream is) throws FileTransmissionException {
-        try (ObjectInputStream stream = new ObjectInputStream(is)) {
-            Object object = stream.readObject();
+    public static FileTransmissionModel readFromStream(ObjectInputStream is) throws FileTransmissionException {
+        try {
+            Object object = is.readObject();
             if (object == null) {
                 return null;
             }

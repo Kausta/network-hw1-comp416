@@ -1,5 +1,8 @@
 package com.baitforbyte.networkhw1.master;
 
+import com.baitforbyte.networkhw1.follower.FileData;
+import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
+import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServerThread;
 
 import java.io.BufferedReader;
@@ -7,6 +10,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 
 class ServerThread extends Thread {
     private final IFileServerThread fsThread;
@@ -14,15 +19,17 @@ class ServerThread extends Thread {
     protected PrintWriter os;
     protected Socket s;
     private String line = "";
+    private String directory;
 
     /**
      * Creates a server thread on the input socket
      *
      * @param s input socket to create a thread on
      */
-    public ServerThread(Socket s, IFileServerThread fsThread) {
+    public ServerThread(Socket s, IFileServerThread fsThread, String directory) {
         this.s = s;
         this.fsThread = fsThread;
+        this.directory = directory;
     }
 
     /**
@@ -38,20 +45,44 @@ class ServerThread extends Thread {
         }
 
         try {
-            line = is.readLine();
             while (line.compareTo("QUIT") != 0) {
-
-                os.println(line);
-                os.flush();
-                System.out.println("Client " + s.getRemoteSocketAddress() + " sent : " + line);
                 line = is.readLine();
+                System.out.println("Client " + s.getRemoteSocketAddress() + " sent : " + line);
+                if (line.startsWith("SENDFILE")) {
+                    FileTransmissionModel f = fsThread.getModelFromPath(directory, line.substring(8));
+                    fsThread.sendFile(f);
+                    sendToClient(f.getHash());
+                } else if (line.startsWith("CORRECT")) {
+                    sendToClient("CORRECT");
+                } else if (line.startsWith("SENDING")) {
+                    sendToClient("SEND");
+                    FileTransmissionModel f = fsThread.tryReceiveFile();
+                    sendToClient(f.getHash());
+                    String answer = is.readLine();
+                    if (answer.equals("CORRECT")) {
+                        sendToClient("CORRECT");
+                        fsThread.writeModelToPath(directory, f);
+                    }
+                } else if (line.startsWith("HASH")) {
+                    HashMap<String, FileData> files = getLocalFiles();
+                    sendToClient("" + files.size());
+                    for (String fileName : files.keySet()) {
+                        FileData file = files.get(fileName);
+
+                        sendToClient(fileName);
+                        sendToClient(file.getHash());
+                        sendToClient("" + file.getLastChangeTime());
+                    }
+                }
             }
         } catch (IOException e) {
-            line = this.getName(); //reused String line for getting thread name
-            System.err.println("Server Thread. Run. IO Error/ Client " + line + " terminated abruptly");
+            e.printStackTrace();
+            System.err.println("Server Thread. Run. IO Error/ Client " + getName() + " terminated abruptly");
         } catch (NullPointerException e) {
-            line = this.getName(); //reused String line for getting thread name
-            System.err.println("Server Thread. Run.Client " + line + " Closed");
+            e.getMessage();
+            System.err.println("Server Thread. Run.Client " + getName() + " Closed");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
         } finally {
             try {
                 System.out.println("Closing the connection");
@@ -76,5 +107,30 @@ class ServerThread extends Thread {
                 System.err.println("Socket Close Error");
             }
         }//end finally
+
+
+    }
+
+    /**
+     * Gets local files in the designated folder
+     *
+     * @return Hashmap of files, hashes and last changed times
+     * @throws IOException              When a file reading exception occurs
+     * @throws NoSuchAlgorithmException When hash function is not found, should not occur with the algorithms we use
+     */
+    private HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {
+        HashMap<String, FileData> files = new HashMap<>();
+        FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
+
+        for (FileTransmissionModel file : fileModels) {
+            files.put(file.getFilename(), new FileData(file.getHash(), file.getLastModifiedTimestamp()));
+        }
+        return files;
+    }
+
+    private void sendToClient(String s) {
+        System.out.println("Send " + s);
+        os.write(s + "\n");
+        os.flush();
     }
 }

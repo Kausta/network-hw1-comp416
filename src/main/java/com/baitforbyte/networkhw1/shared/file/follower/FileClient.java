@@ -5,9 +5,7 @@ import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionException;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.Objects;
 
@@ -54,7 +52,7 @@ public class FileClient extends BaseClient implements IFileClient {
     public FileTransmissionModel tryReceiveFile() throws IOException {
         validateConnection();
 
-        return FileUtils.readFromStream(this.is);
+        return FileUtils.readFromStream(new ObjectInputStream(this.is));
     }
 
     /**
@@ -70,7 +68,7 @@ public class FileClient extends BaseClient implements IFileClient {
         Objects.requireNonNull(model);
         validateConnection();
 
-        FileUtils.writeToStream(this.os, model);
+        FileUtils.writeToStream(new ObjectOutputStream(this.os), model);
     }
 
     /**
