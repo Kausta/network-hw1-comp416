@@ -39,6 +39,7 @@ public class Server extends BaseServer {
         this.directory = DirectoryUtils.getDirectoryInDesktop("DriveCloud");
         drive = new DriveConnection();
         drive.checkFolderIsExist();
+        // drive.getPageToken();
         // drive.getFileList();
         /*for(File file: drive.getFileList()){
             System.out.println(file);
@@ -49,14 +50,15 @@ public class Server extends BaseServer {
             System.out.println(e);
             System.out.println(tmpFileData.getHash());
         }*/
-        // drive.uploadFile("perfection.txt");
-        scheduler.scheduleAtFixedRate(() -> {
+        //drive.deleteFile("perfection.txt");
+        drive.updateFile("perfection.txt");
+        /*scheduler.scheduleAtFixedRate(() -> {
             try {
-                startWorking();
+                drive.detectChanges();
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }, 0, 30, TimeUnit.SECONDS);
+        }, 0, 15, TimeUnit.SECONDS);*/
     }
 
     public void startWorking() throws IOException, NoSuchAlgorithmException {

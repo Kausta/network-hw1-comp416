@@ -50,7 +50,8 @@ public class DriveConnection {
 
   // TODO: Google Doc'lar için file extensionları çoğalt
   // TODO: Hash'ler uyuşmuyor
-  // TODO: Update function
+  // TODO: Update function geliştirilebilir?
+  // TODO: Update function text
   // FilePath
 
 
@@ -191,6 +192,7 @@ public class DriveConnection {
     }*/
   }
 
+  
   public String getPageToken() throws IOException {
     StartPageToken response = service.changes()
           .getStartPageToken()
@@ -201,34 +203,32 @@ public class DriveConnection {
 
   public void detectChanges() throws IOException {
     System.out.println("========");
-    getPageToken();
     System.out.println(pageToken);
-    while (pageToken != null) {
-      ChangeList changes = service.changes().list(pageToken)
-          .execute();
-      System.out.println(changes.getChanges());
-      for (Change c: changes.getChanges()) {
-        System.out.println("Change found for file: " + c.getFileId());
-      }
-      if (changes.getNewStartPageToken() != null) {
-        pageToken = changes.getNewStartPageToken();
-      }
-      pageToken = changes.getNextPageToken();
+    ChangeList changes = service.changes().list(pageToken)
+        .setIncludeRemoved(true)
+        .execute();
+    System.out.println(changes);
+    System.out.println(changes.getChanges().size());
+    System.out.println(changes.getChanges());
+    for (Change c: changes.getChanges()) {
+      System.out.println("Change found for file: " + c.getFileId());
     }
+    pageToken = changes.getNewStartPageToken();
   }
 
   public List<File> getFileList() throws IOException {
     // setPageSize's default value is 100, max value is 1000
     // Its value must be 1000 in production
     FileList response = service.files().list()
-          .setPageSize(1000)
-          .setFields("nextPageToken, files(id, name, parents, mimeType, modifiedTime, md5Checksum)")
+          .setPageSize(20)
+          .setFields("nextPageToken, files(id, name, parents, trashed, mimeType, modifiedTime, md5Checksum)")
           .execute();
     List<File> fileList = response.getFiles();
     // trash'deki şeyleri de alalım mı buraya
     for(File file: fileList) {
       String parentID = file.getId();
-      if(file.getParents() != null) {
+      if(file.getParents() != null && !file.getTrashed()) {
+        System.out.println(file.getName());
         for(String p: file.getParents()) {
           parentID = p;
         }
@@ -304,6 +304,15 @@ public class DriveConnection {
       fos.write(outputStream.toByteArray());
       fos.close();
     }
+  }
+
+  public void updateFile(final String fileName) throws IOException {
+    deleteFile(fileName);
+    uploadFile(fileName);
+  }
+
+  public void deleteFile(final String fileName) throws IOException {
+    service.files().delete(getFileId(fileName)).execute();
   }
 
   /**
