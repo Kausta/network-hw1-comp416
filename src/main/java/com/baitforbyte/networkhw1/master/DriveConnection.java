@@ -1,5 +1,7 @@
 package com.baitforbyte.networkhw1.master;
 
+import com.baitforbyte.networkhw1.follower.FileData;
+import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
 import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -11,23 +13,33 @@ import com.google.api.client.http.AbstractInputStreamContent;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.DateTime;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
+import com.google.api.services.drive.model.Change;
+import com.google.api.services.drive.model.ChangeList;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
+import com.google.api.services.drive.model.StartPageToken;
 import com.google.common.collect.ImmutableMap;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
+
 import com.google.api.client.http.AbstractInputStreamContent;
 
 import java.io.ByteArrayOutputStream;
@@ -36,8 +48,9 @@ import com.google.api.client.http.FileContent;
 
 public class DriveConnection {
 
-  // TODO: try-catch blokları şeklinde yazıp exception mı fırlatılmalı acaba
-  // TODO: Google Doc'lar exception yazmam gerekiyor
+  // TODO: Google Doc'lar için file extensionları çoğalt
+  // TODO: Hash'ler uyuşmuyor
+  // TODO: Update function
   // FilePath
 
 
@@ -47,8 +60,11 @@ public class DriveConnection {
   // TODO: Token ve credential path'ini degistirebiliyor muyuz?
   private static final String TOKENS_DIRECTORY_PATH = "tokens";
   private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
-  private static final String APPLICATION_FOLDER_PATH = "/home/eusbolh/Desktop/";
+  private static final String APPLICATION_FOLDER_PATH = DirectoryUtils.getDirectoryInDesktop("DriveCloud");
   private static Drive service;
+  private String folderID;
+  private String rootFolderID;
+  private String pageToken;
 
   /**
    * Global constant of the scope used by application
@@ -76,7 +92,12 @@ public class DriveConnection {
     .put("json", "application/vnd.google-apps.script+json")
     .build();
 
+  private static final Map<String, String> fileMimeTypeMapDownload = ImmutableMap.<String, String>builder()
+    .put("application/vnd.google-apps.document", "application/vnd.oasis.opendocument.text")
+    .build();
+
   private static Map<String, String> fileIdMap = new HashMap<String, String>();
+  private static Map<String, String> fileMimeMap = new HashMap<String, String>();
 
   /**
    * Class constructor for DriveConnection class
@@ -89,24 +110,171 @@ public class DriveConnection {
           .build(); 
   }
 
-  public static List<File> getFileList() throws IOException {
+  public void checkFolderIsExist() throws IOException {
     FileList response = service.files().list()
           .setPageSize(1000)
-          .setFields("nextPageToken, files(id, name, modifiedTime)")
+          .setFields("nextPageToken, files(id, name, parents, mimeType)")
           .execute();
     List<File> fileList = response.getFiles();
+    Boolean found = false;
     for(File file: fileList) {
-      fileIdMap.put(file.getName(), file.getId());
+      if (file.getName().equals("DriveCloud")
+            && file.getMimeType().equals("application/vnd.google-apps.folder")) {
+        found = true;
+        folderID = file.getId();
+        for(String p: file.getParents()) {
+          rootFolderID = p;
+        }   
+        break;
+      }
+    }
+    if (found) {
+      System.out.println("DriveCloud folder is exist, so the new one is not gonna be created");
+    }
+    else {
+      System.out.println("DriveCloud folder is not exist, so the new one is being created");
+      File fileMetadata = new File();
+      fileMetadata.setName("DriveCloud");
+      fileMetadata.setMimeType("application/vnd.google-apps.folder");
+      File file = service.files().create(fileMetadata)
+          .setFields("id")
+          .execute();
+      folderID = file.getId();
+      FileList res = service.files().list()
+          .setPageSize(1000)
+          .setFields("nextPageToken, files(id, name, parents, mimeType)")
+          .execute();
+      List<File> fList = res.getFiles();
+      for(File f: fList) {
+        if (f.getName().equals("DriveCloud")
+              && f.getMimeType().equals("application/vnd.google-apps.folder")) {
+          for(String p: f.getParents()) {
+            rootFolderID = p;
+          }   
+          break;
+        }
+      }
+      System.out.println("DriveCloud folder is created with the ID " + folderID);
+    }
+  }
+
+  public Boolean checkFileInFolder(String parentID) throws IOException {
+    // System.out.println(parentID + " " + folderID);
+    if (parentID.equals(folderID)) {
+      return true;
+    }
+    else
+      return false;
+    /*
+    else if (parentID.equals(rootFolderID)) {
+      return false;
+    }
+    else {
+      String newParentID = rootFolderID;
+      FileList res = service.files().list()
+      .setPageSize(1000)
+      .setFields("nextPageToken, files(id, parents, mimeType)")
+      .execute();
+      List<File> fList = res.getFiles();
+      for(File f: fList) {
+        if (f.getParents() == null)
+          return false;
+        if (f.getId().equals(parentID)
+              && f.getMimeType().equals("application/vnd.google-apps.folder")) {
+          for(String p: f.getParents()) {
+            newParentID = p;
+          }   
+          break;
+        }
+      }
+      return checkFileInFolder(newParentID);
+    }*/
+  }
+
+  public String getPageToken() throws IOException {
+    StartPageToken response = service.changes()
+          .getStartPageToken()
+          .execute();
+    pageToken = response.getStartPageToken();
+    return pageToken;
+  }
+
+  public void detectChanges() throws IOException {
+    System.out.println("========");
+    getPageToken();
+    System.out.println(pageToken);
+    while (pageToken != null) {
+      ChangeList changes = service.changes().list(pageToken)
+          .execute();
+      System.out.println(changes.getChanges());
+      for (Change c: changes.getChanges()) {
+        System.out.println("Change found for file: " + c.getFileId());
+      }
+      if (changes.getNewStartPageToken() != null) {
+        pageToken = changes.getNewStartPageToken();
+      }
+      pageToken = changes.getNextPageToken();
+    }
+  }
+
+  public List<File> getFileList() throws IOException {
+    // setPageSize's default value is 100, max value is 1000
+    // Its value must be 1000 in production
+    FileList response = service.files().list()
+          .setPageSize(1000)
+          .setFields("nextPageToken, files(id, name, parents, mimeType, modifiedTime, md5Checksum)")
+          .execute();
+    List<File> fileList = response.getFiles();
+    // trash'deki şeyleri de alalım mı buraya
+    for(File file: fileList) {
+      String parentID = file.getId();
+      if(file.getParents() != null) {
+        for(String p: file.getParents()) {
+          parentID = p;
+        }
+        if (checkFileInFolder(parentID)) {
+          fileIdMap.put(file.getName(), file.getId());
+          fileMimeMap.put(file.getName(), file.getMimeType());
+        }
+      }
     }
     return fileList;
   }
 
-  public static void uploadFile(final String fileName) throws IOException {
+  public HashMap<String, FileData> getFileDataMap() throws IOException, NoSuchAlgorithmException {
+    FileList response = service.files().list()
+          .setPageSize(1000)
+          .setFields("nextPageToken, files(id, name, parents, mimeType, modifiedTime, md5Checksum)")
+          .execute();
+    HashMap<String, FileData> fileMap = new HashMap<String, FileData>();
+    // trash'deki şeyleri de alalım mı buraya
+    for(File file: response.getFiles()) {
+      String parentID = file.getId();
+      if(file.getParents() != null) {
+        for(String p: file.getParents()) {
+          parentID = p;
+        }
+        if (checkFileInFolder(parentID)) {
+          DateTime tmpDateTime = file.getModifiedTime();
+          System.out.println("=======");
+          final MessageDigest md = MessageDigest.getInstance(ApplicationConfiguration.getInstance().getFileHashType());
+          System.out.println(file.getMd5Checksum());
+          byte[] b = file.getMd5Checksum().getBytes();
+          System.out.println(Base64.getEncoder().encodeToString(b));
+          FileData tmpFile = new FileData(Base64.getEncoder().encodeToString(b), tmpDateTime.getValue());
+          fileMap.put(file.getName(), tmpFile);
+        }
+      }
+    }
+    return fileMap;
+  }
+
+  public void uploadFile(final String fileName) throws IOException {
     java.io.File uploadFile = new java.io.File(getFilePath(fileName));
     AbstractInputStreamContent uploadContent = new FileContent(fileExtensionMap.get(getFileExtension(fileName)), uploadFile);
     File fileMetadata = new File();
     fileMetadata.setName(fileName);
-    fileMetadata.setParents(null);
+    fileMetadata.setParents(Collections.singletonList(folderID));
     File file = service.files().create(fileMetadata, uploadContent)
           .setFields("id, webContentLink, webViewLink").execute();
     System.out.println(fileName + " is uploaded!");
@@ -117,12 +285,25 @@ public class DriveConnection {
   public void downloadFile(final String fileName) throws IOException {
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     String fileId = getFileId(fileName);
-    service.files().get(fileId)
-          .executeMediaAndDownloadTo(outputStream);
     // TODO: Download message yazılmalı.
-    FileOutputStream fos = new FileOutputStream(getFilePath(fileName));
-    fos.write(outputStream.toByteArray());
-    fos.close();
+    String mimeType = fileMimeMap.get(fileName);
+    if (mimeType.equals("application/vnd.google-apps.folder")) {
+      System.out.println("You are trying to download a folder, it is not allowed!");
+    }
+    else {
+      if (mimeType.contains("google-apps")) {
+        service.files().export(fileId, fileMimeTypeMapDownload.get(mimeType))
+            .executeMediaAndDownloadTo(outputStream);
+      }
+      else {
+        service.files().get(fileId)
+            .executeMediaAndDownloadTo(outputStream);
+      }
+      System.out.println(getFilePath(fileName));
+      FileOutputStream fos = new FileOutputStream(getFilePath(fileName));
+      fos.write(outputStream.toByteArray());
+      fos.close();
+    }
   }
 
   /**
@@ -130,11 +311,11 @@ public class DriveConnection {
    * @param fileName Name of the file
    * @return File path of the file
    */
-  private static String getFilePath(final String fileName) {
-    return APPLICATION_FOLDER_PATH + fileName;
+  private String getFilePath(final String fileName) {
+    return Paths.get(APPLICATION_FOLDER_PATH, fileName).toString();
   }
 
-  private static String getFileExtension(final String fileName) {
+  private String getFileExtension(final String fileName) {
     for(int i = fileName.length()-1; i >= 0; i--) {
       if (fileName.charAt(i) == '.') {
         return fileName.substring(i+1);
@@ -143,7 +324,7 @@ public class DriveConnection {
     return fileName;
   }
 
-  private static String getFileId(final String fileName) throws IOException{
+  private String getFileId(final String fileName) throws IOException{
     if (fileIdMap.isEmpty())
       getFileList();
     return fileIdMap.get(fileName);
