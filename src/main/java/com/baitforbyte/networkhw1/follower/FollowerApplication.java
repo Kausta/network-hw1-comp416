@@ -1,6 +1,8 @@
 package com.baitforbyte.networkhw1.follower;
 
-import com.baitforbyte.networkhw1.shared.file.FileClient;
+import com.baitforbyte.networkhw1.shared.file.follower.FileClient;
+
+import java.io.IOException;
 
 public class FollowerApplication {
     private String ip;
@@ -23,13 +25,23 @@ public class FollowerApplication {
             connectionToServer = new ConnectionToServer(ip, port, fileClient);
             connectionToServer.connect();
 
-            // TODO: Start loop
-        } finally {
-            if(connectionToServer != null) {
-                connectionToServer.disconnect();
+            while (true) {
+                Thread.sleep(5);
             }
-            if(fileClient != null) {
-                fileClient.disconnect();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (connectionToServer != null) {
+                    connectionToServer.disconnect();
+                }
+                if (fileClient != null) {
+                    fileClient.disconnect();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
