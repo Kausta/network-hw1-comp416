@@ -5,9 +5,11 @@ import com.baitforbyte.networkhw1.shared.base.ConnectionException;
 import com.baitforbyte.networkhw1.shared.file.master.FileServerThread;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
 import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
+import com.google.api.services.drive.model.File;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.security.GeneralSecurityException;
 
 
 public class Server extends BaseServer {
@@ -20,10 +22,18 @@ public class Server extends BaseServer {
      *
      * @param port Server port
      */
-    public Server(int port, IFileServer fileServer) throws IOException {
+    public Server(int port, IFileServer fileServer) throws IOException, GeneralSecurityException {
         super(port);
         this.fileServer = fileServer;
         this.directory = DirectoryUtils.getDirectoryInDesktop("CloudDrive");
+        DriveConnection asd = new DriveConnection();
+        /*
+        for(File file: asd.getFileList()){
+            System.out.println(file);
+        }
+        */
+        // asd.uploadFile("perfection.txt");
+        asd.downloadFile("dekontt.pdf");
     }
 
     /**

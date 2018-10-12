@@ -3,6 +3,7 @@ package com.baitforbyte.networkhw1.master;
 import com.baitforbyte.networkhw1.shared.file.master.FileServer;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 
 public class MasterApplication {
     private int port;
@@ -14,7 +15,7 @@ public class MasterApplication {
         this.filePort = filePort;
     }
 
-    public void run() {
+    public void run() throws GeneralSecurityException {
         FileServer fsServer = null;
         Server server = null;
         try {
