@@ -1,30 +1,28 @@
 package com.baitforbyte.networkhw1.follower;
 
 import com.baitforbyte.networkhw1.shared.base.BaseClient;
+import com.baitforbyte.networkhw1.shared.file.data.ChangeTracking;
+import com.baitforbyte.networkhw1.shared.file.data.Constants;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionException;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.follower.IFileClient;
 import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Created by Yahya Hassanzadeh on 20/09/2017.
  */
 
 public class ConnectionToServer extends BaseClient {
-    private static final String GET_HASH_MESSAGE = "HASH";
+    private final String GET_HASH_MESSAGE = "HASH";
+    private final int LOOP_TIME = 30; 
+    private final int LOOP_DELAY = 0; 
+    private final TimeUnit LOOP_UNIT = TimeUnit.SECONDS; 
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -43,10 +41,11 @@ public class ConnectionToServer extends BaseClient {
         this.directory = DirectoryUtils.getDirectoryInDesktop("CloudDrive1");
     }
 
-    public void startWorking() throws IOException, NoSuchAlgorithmException {
-        HashMap<String, FileData> files = getHash();
-        compareHash(files);
-
+    // TODO: write docstring
+    public void tasks() throws IOException, NoSuchAlgorithmException {
+        HashMap<String, FileData> files = getHashesFromServer();
+        Set<String> localFileNames = compareHash(files);
+        FileUtils.saveLog(localFileNames, directory, Constants.PREV_FILES_LOG_NAME);
     }
 
     /**
@@ -57,14 +56,18 @@ public class ConnectionToServer extends BaseClient {
         super.connect();
         is = new BufferedReader(new InputStreamReader(getSocket().getInputStream()));
         os = new PrintWriter(getSocket().getOutputStream());
+        startWorkingLoop();
+    }
+
+    // TODO: write docstring
+    private void startWorkingLoop(){
         scheduler.scheduleAtFixedRate(() -> {
             try {
-                startWorking();
+                tasks();
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }, 0, 30, TimeUnit.SECONDS);
-
+        }, LOOP_DELAY, LOOP_TIME, LOOP_UNIT);
     }
 
     /**
@@ -89,11 +92,10 @@ public class ConnectionToServer extends BaseClient {
             if (counter > 5) {
                 throw new RuntimeException("Connection closed");
             }
-            System.out.println("OH NO");
+            System.out.println("Waiting for connection");
             counter++;
             response = is.readLine();
         }
-        System.out.println("Server sent " + response);
         return response;
     }
 
@@ -115,7 +117,7 @@ public class ConnectionToServer extends BaseClient {
      *
      * @return the recieved filename, hash and last change times
      */
-    public HashMap<String, FileData> getHash() throws IOException {
+    public HashMap<String, FileData> getHashesFromServer() throws IOException {
         HashMap<String, FileData> files = new HashMap<>();
         String number = sendForAnswer(GET_HASH_MESSAGE);
 
@@ -128,7 +130,6 @@ public class ConnectionToServer extends BaseClient {
             FileData data = new FileData(hash, Long.parseLong(date));
             files.put(fileName, data);
         }
-
         return files;
     }
 
@@ -141,16 +142,16 @@ public class ConnectionToServer extends BaseClient {
      * @throws NoSuchAlgorithmException
      * @throws FileTransmissionException
      */
-    public void compareHash(HashMap<String, FileData> files) throws NoSuchAlgorithmException, IOException, FileTransmissionException {
-        System.out.println("In Compare Hash");
+    public Set<String> compareHash(HashMap<String, FileData> files) throws NoSuchAlgorithmException, IOException, FileTransmissionException {
         ArrayList<String> filesToSend = new ArrayList<String>();
         ArrayList<String> filesToRequest = new ArrayList<String>();
-        HashMap<String, FileData> localFiles = getLocalFiles();
+        HashMap<String, FileData> localFiles = ChangeTracking.getLocalFiles(directory);
+        Set<String> filesToDelete = ChangeTracking.getFilesToDelete(directory); 
+
         for (String fileName : files.keySet()) {
             if (localFiles.containsKey(fileName)) {
                 FileData local = localFiles.get(fileName);
                 FileData remote = files.get(fileName);
-                System.out.println("Local: " + local.getHash() + " - Remote: " + remote.getHash());
                 if (!local.getHash().equals(remote.getHash())) {
                     long dateDiff = local.getLastChangeTime() - remote.getLastChangeTime();
                     if (dateDiff > 0) {
@@ -164,9 +165,33 @@ public class ConnectionToServer extends BaseClient {
                 filesToRequest.add(fileName);
             }
         }
-        System.out.println(Arrays.deepToString(filesToRequest.toArray()));
-        filesToSend.addAll(localFiles.keySet());
-        System.out.println(Arrays.deepToString(filesToSend.toArray()));
+
+        deleteFilesAtServer(filesToDelete);
+
+        requestFilesToDeleteFromServer();
+
+        requestFilesFromServer(filesToRequest);
+        
+        sendFilesToServer(filesToSend);       
+        
+        return localFiles.keySet();
+    }
+
+    // TODO: write docstring
+    private void deleteFilesAtServer(Set<String> filesToDelete) throws IOException {
+        for (String file : filesToDelete) {
+            String response = sendForAnswer("DELETE");
+            if(response.equals("SEND")){
+                response = sendForAnswer(file);
+                while(!response.equals("DELETED")){
+                    response = sendForAnswer(file);
+                }
+            }
+        }
+    }
+
+    // TODO: write docstring
+    private void requestFilesFromServer(ArrayList<String> filesToRequest) throws IOException, NoSuchAlgorithmException {
         for (String fileName : filesToRequest) {
             String response = "";
             FileTransmissionModel f = null;
@@ -179,7 +204,10 @@ public class ConnectionToServer extends BaseClient {
             }
             client.writeModelToPath(directory, f);
         }
+    }
 
+    // TODO: write docstring
+    private void sendFilesToServer(ArrayList<String> filesToSend) throws IOException, NoSuchAlgorithmException {
         for (String fileName : filesToSend) {
             String response = "";
             System.out.println("Sending " + fileName);
@@ -198,23 +226,18 @@ public class ConnectionToServer extends BaseClient {
                 }
             }
         }
-    }
+    }    
 
-    /**
-     * Gets local files in the designated folder
-     *
-     * @return Hashmap of files, hashes and last changed times
-     * @throws IOException              When a file reading exception occurs
-     * @throws NoSuchAlgorithmException When hash function is not found, should not occur with the algorithms we use
-     */
-    private HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {
-        HashMap<String, FileData> files = new HashMap<>();
-        FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
-
-        for (FileTransmissionModel file : fileModels) {
-            files.put(file.getFilename(), new FileData(file.getHash(), file.getLastModifiedTimestamp()));
+    // TODO: write docstring
+    public void requestFilesToDeleteFromServer() throws IOException {
+        String response = sendForAnswer("REMOVE");
+        if(response.equals("SENDING")){
+            response = is.readLine();
+            while(!response.equals("DONE")){                
+                FileUtils.deleteFile(directory, response);
+                response = sendForAnswer("DELETED");
+            }
         }
-        return files;
     }
 
 

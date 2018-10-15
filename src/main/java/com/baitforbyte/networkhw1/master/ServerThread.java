@@ -1,10 +1,5 @@
 package com.baitforbyte.networkhw1.master;
 
-import com.baitforbyte.networkhw1.follower.FileData;
-import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
-import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
-import com.baitforbyte.networkhw1.shared.file.master.IFileServerThread;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -12,8 +7,19 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+
+import com.baitforbyte.networkhw1.follower.FileData;
+import com.baitforbyte.networkhw1.shared.file.data.ChangeTracking;
+import com.baitforbyte.networkhw1.shared.file.data.Constants;
+import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
+import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
+import com.baitforbyte.networkhw1.shared.file.master.IFileServerThread;
 
 class ServerThread extends Thread {
+
+
     private final IFileServerThread fsThread;
     protected BufferedReader is;
     protected PrintWriter os;
@@ -73,7 +79,29 @@ class ServerThread extends Thread {
                         sendToClient(file.getHash());
                         sendToClient("" + file.getLastChangeTime());
                     }
+                } else if (line.startsWith("DELETE")) {
+                    sendToClient("SEND");
+                    String fileName = is.readLine();
+                    FileUtils.deleteFile(directory, fileName);
+                    sendToClient("DELETED");
+                } else if (line.startsWith("REMOVE")) {
+                    Set<String> filesToDelete = ChangeTracking.getFilesToDelete(directory);
+                    sendToClient("SENDING");
+                    String response = "";
+                    for (String file : filesToDelete) {
+                        while (!response.equals("DELETED")){
+                            sendToClient(file);
+                            response = is.readLine();                            
+                        }
+                        
+                    }
                 }
+                FileUtils.saveLog(ChangeTracking.getLocalFileNames(directory), directory, Constants.PREV_FILES_LOG_NAME);
+                Set<String> localHashes = new HashSet<>();
+                for (String file : ChangeTracking.getLocalFileNames(directory)) {
+                    localHashes.add(file + "-" + getLocalFiles().get(file).getHash());
+                }
+                FileUtils.saveLog(localHashes, directory, Constants.CHANGE_FILES_LOG_NAME);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -128,9 +156,14 @@ class ServerThread extends Thread {
         return files;
     }
 
+    // TODO: write docstring
     private void sendToClient(String s) {
         System.out.println("Send " + s);
         os.write(s + "\n");
         os.flush();
     }
+
+
+    
+
 }

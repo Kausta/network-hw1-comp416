@@ -11,7 +11,7 @@ public final class DirectoryUtils {
     }
 
     public static String getDesktopDirectory() {
-        return getHomeDirectory() + "/Desktop";
+        return Paths.get(getHomeDirectory(), "Desktop").toString();
     }
 
     public static String getDirectoryInDesktop(String directory) {
