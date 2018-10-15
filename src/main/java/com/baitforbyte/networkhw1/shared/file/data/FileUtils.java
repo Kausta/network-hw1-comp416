@@ -1,5 +1,6 @@
 package com.baitforbyte.networkhw1.shared.file.data;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -7,8 +8,14 @@ import java.io.ObjectOutputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Utility class for reading and writing file data to files or network streams
@@ -124,7 +131,39 @@ public final class FileUtils {
         }
     }
 
+    // TODO: write docstring
     private static Path getPath(String directory, String filename) {
         return FileSystems.getDefault().getPath(directory, filename);
+    }
+
+    // TODO: write docstring
+    public static List<String> readPreviousFiles(String fileName){
+        List<String> files = new ArrayList<>();
+        try (Stream<String> stream = Files.lines(Paths.get(fileName))){
+            files = stream.collect(Collectors.toList());
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
+        return files;
+    }
+
+    // TODO: write docstring
+    public static void savePreviousFiles(Set<String> files, String fileName){
+        try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(fileName))) {
+            for (String file : files) {
+                writer.write(file + "\r\n");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // TODO: write docstring
+    public static void deleteFile(String fileName){
+        try {
+            Files.delete(Paths.get(fileName));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

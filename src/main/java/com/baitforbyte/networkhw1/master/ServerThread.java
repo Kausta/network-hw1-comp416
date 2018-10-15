@@ -5,13 +5,10 @@ import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServerThread;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
+import java.util.*;
 
 class ServerThread extends Thread {
     private final IFileServerThread fsThread;
@@ -73,7 +70,24 @@ class ServerThread extends Thread {
                         sendToClient(file.getHash());
                         sendToClient("" + file.getLastChangeTime());
                     }
+                } else if (line.startsWith("DELETE")) {
+                    sendToClient("SEND");
+                    String fileName = is.readLine();
+                    FileUtils.deleteFile(fileName);
+                    sendToClient("DELETED");
+                } else if (line.startsWith("REMOVE")) {
+                    ArrayList<String>  filesToDelete = getFilesToDelete("fileName", getLocalFileNames()); // TODO: filename
+                    sendToClient("SENDING");
+                    String response = "";
+                    for (String file : filesToDelete) {
+                        while (!response.equals("DELETED")){
+                            sendToClient(file);
+                            response = is.readLine();                            
+                        }
+                        
+                    }
                 }
+                FileUtils.savePreviousFiles(getLocalFileNames(), "filename"); // TODO: filename
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -132,5 +146,24 @@ class ServerThread extends Thread {
         System.out.println("Send " + s);
         os.write(s + "\n");
         os.flush();
+    }
+
+    // TODO: write docstring
+    private ArrayList<String> getFilesToDelete(String fileName, Set<String> files){
+        ArrayList<String> previousFiles = (ArrayList<String>) FileUtils.readPreviousFiles(fileName);
+        for (String file : files) {
+            previousFiles.remove(file);
+        }
+        return previousFiles;
+    }
+
+    private Set<String> getLocalFileNames() throws IOException, NoSuchAlgorithmException {
+        Set<String> files = new HashSet<String>();
+        FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
+
+        for (FileTransmissionModel file : fileModels) {
+            files.add(file.getFilename());
+        }
+        return files;
     }
 }
