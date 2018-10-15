@@ -8,14 +8,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import com.baitforbyte.networkhw1.follower.FileData;
 import com.baitforbyte.networkhw1.shared.base.BaseServer;
 import com.baitforbyte.networkhw1.shared.base.ConnectionException;
-import com.baitforbyte.networkhw1.shared.file.data.ChangeTracking;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.FileServerThread;
@@ -41,7 +40,7 @@ public class Server extends BaseServer {
         this.directory = DirectoryUtils.getDirectoryInDesktop("DriveCloud");
         drive = new DriveConnection();
         drive.checkFolderIsExist();
-        // drive.getPageToken();
+        drive.initializeChangeMap();
         // drive.getFileList();
         /*for(File file: drive.getFileList()){
             System.out.println(file);
@@ -53,19 +52,15 @@ public class Server extends BaseServer {
             System.out.println(tmpFileData.getHash());
         }*/
         //drive.deleteFile("perfection.txt");
-        drive.updateFile("perfection.txt");
-        /*scheduler.scheduleAtFixedRate(() -> {
+        // drive.updateFile("perfection.txt");
+        scheduler.scheduleAtFixedRate(() -> {
             try {
+                // Don't forget to call getPageToken() before scheduler
                 drive.detectChanges();
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }, 0, 15, TimeUnit.SECONDS);*/
-
-
-        Set<String> changedSet = ChangeTracking.getChangedFiles(directory);
-        Set<String> createdSet = ChangeTracking.getAddedFiles(directory);
-        Set<String> deletedSet = ChangeTracking.getFilesToDelete(directory);
+        }, 0, 15, TimeUnit.SECONDS);
     }
 
     public void startWorking() throws IOException, NoSuchAlgorithmException {
