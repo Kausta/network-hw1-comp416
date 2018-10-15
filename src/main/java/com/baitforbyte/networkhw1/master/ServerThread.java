@@ -5,15 +5,16 @@ import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServerThread;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
+import java.util.*;
 
 class ServerThread extends Thread {
+
+    private final String PREV_FILES_LOG_NAME = "prev.log";
+    private final String CHANGE_FILES_LOG_NAME = "change.log";
+
     private final IFileServerThread fsThread;
     protected BufferedReader is;
     protected PrintWriter os;
@@ -55,6 +56,7 @@ class ServerThread extends Thread {
                 } else if (line.startsWith("CORRECT")) {
                     sendToClient("CORRECT");
                 } else if (line.startsWith("SENDING")) {
+                    Set<String> changedFiles = FileUtils.readLog(directory, CHANGE_FILES_LOG_NAME);
                     sendToClient("SEND");
                     FileTransmissionModel f = fsThread.tryReceiveFile();
                     sendToClient(f.getHash());
@@ -62,6 +64,8 @@ class ServerThread extends Thread {
                     if (answer.equals("CORRECT")) {
                         sendToClient("CORRECT");
                         fsThread.writeModelToPath(directory, f);
+                        changedFiles.add(f.getFilename());
+                        FileUtils.saveLog(changedFiles, directory, CHANGE_FILES_LOG_NAME); 
                     }
                 } else if (line.startsWith("HASH")) {
                     HashMap<String, FileData> files = getLocalFiles();
@@ -73,7 +77,24 @@ class ServerThread extends Thread {
                         sendToClient(file.getHash());
                         sendToClient("" + file.getLastChangeTime());
                     }
+                } else if (line.startsWith("DELETE")) {
+                    sendToClient("SEND");
+                    String fileName = is.readLine();
+                    FileUtils.deleteFile(directory, fileName);
+                    sendToClient("DELETED");
+                } else if (line.startsWith("REMOVE")) {
+                    Set<String>  filesToDelete = getFilesToDelete();
+                    sendToClient("SENDING");
+                    String response = "";
+                    for (String file : filesToDelete) {
+                        while (!response.equals("DELETED")){
+                            sendToClient(file);
+                            response = is.readLine();                            
+                        }
+                        
+                    }
                 }
+                FileUtils.saveLog(getLocalFileNames(), directory, PREV_FILES_LOG_NAME);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -128,9 +149,48 @@ class ServerThread extends Thread {
         return files;
     }
 
+    // TODO: write docstring
     private void sendToClient(String s) {
         System.out.println("Send " + s);
         os.write(s + "\n");
         os.flush();
+    }
+
+    // TODO: write docstring
+    private Set<String> getAddedFiles() throws NoSuchAlgorithmException, IOException {
+        Set<String> previousFiles = FileUtils.readLog(directory, PREV_FILES_LOG_NAME);
+        Set<String> files = getLocalFileNames();
+        for (String file : previousFiles) {
+            files.remove(file);
+        }
+        return files;
+    }
+
+    // TODO: write docstring
+    private Set<String> getAndClearChangedFiles(){
+        Set<String> changedFiles = FileUtils.readLog(directory, CHANGE_FILES_LOG_NAME);
+        FileUtils.saveLog(new HashSet<String>(), directory, CHANGE_FILES_LOG_NAME);
+        return changedFiles;
+    }
+
+    // TODO: write docstring
+    private Set<String> getFilesToDelete() throws NoSuchAlgorithmException, IOException {
+        Set<String> previousFiles = FileUtils.readLog(directory, PREV_FILES_LOG_NAME);
+        for (String file : getLocalFileNames()) {
+            previousFiles.remove(file);
+        }
+        return previousFiles;
+    }
+
+    private Set<String> getLocalFileNames() throws IOException, NoSuchAlgorithmException {
+        Set<String> files = new HashSet<String>();
+        FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
+
+        for (FileTransmissionModel file : fileModels) {
+            if(!file.getFilename().equals(PREV_FILES_LOG_NAME) && !file.getFilename().equals(CHANGE_FILES_LOG_NAME)){
+                files.add(file.getFilename());
+            }
+        }
+        return files;
     }
 }
