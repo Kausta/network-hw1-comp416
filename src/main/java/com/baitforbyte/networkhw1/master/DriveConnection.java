@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
+import java.util.Base64; 
 
 import com.google.api.client.http.AbstractInputStreamContent;
 
@@ -99,6 +99,8 @@ public class DriveConnection {
 
   private static Map<String, String> fileIdMap = new HashMap<String, String>();
   private static Map<String, String> fileMimeMap = new HashMap<String, String>();
+  private static Map<String, DateTime> changeMap = new HashMap<String, DateTime>();
+  private static Map<String, DateTime> tmpChangeMap = new HashMap<String, DateTime>();
 
   /**
    * Class constructor for DriveConnection class
@@ -193,34 +195,94 @@ public class DriveConnection {
   }
 
   
-  public String getPageToken() throws IOException {
-    StartPageToken response = service.changes()
-          .getStartPageToken()
+  public void initializeChangeMap() throws IOException {
+    FileList response = service.files().list()
+          .setPageSize(1000)
+          .setFields("nextPageToken, files(id, name, parents, trashed, modifiedTime)")
           .execute();
-    pageToken = response.getStartPageToken();
-    return pageToken;
+    List<File> fileList = response.getFiles();
+    for(File file: fileList) {
+      String parentID = file.getId();
+      if(file.getParents() != null && !file.getTrashed()) {
+        for(String p: file.getParents()) {
+          parentID = p;
+        }
+        if (checkFileInFolder(parentID)) {
+          changeMap.put(file.getName(), file.getModifiedTime());
+        }
+      }
+    }
+  }
+
+  public void deleteLocalFile(String fileName) {
+    java.io.File file = new java.io.File(getFilePath(fileName));
+    file.delete();
+    System.out.println("Local file " + fileName + " has been deleted.");
   }
 
   public void detectChanges() throws IOException {
-    System.out.println("========");
-    System.out.println(pageToken);
-    ChangeList changes = service.changes().list(pageToken)
-        .setIncludeRemoved(true)
-        .execute();
-    System.out.println(changes);
-    System.out.println(changes.getChanges().size());
-    System.out.println(changes.getChanges());
-    for (Change c: changes.getChanges()) {
-      System.out.println("Change found for file: " + c.getFileId());
+    Boolean changed = false;
+    FileList response = service.files().list()
+          .setPageSize(1000)
+          .setFields("nextPageToken, files(id, name, parents, trashed, modifiedTime)")
+          .execute();
+    List<File> fileList = response.getFiles();
+    for(File file: fileList) {
+      String parentID = file.getId();
+      if(file.getParents() != null && !file.getTrashed()) {
+        for(String p: file.getParents()) {
+          parentID = p;
+        }
+        if (checkFileInFolder(parentID)) {
+          tmpChangeMap.put(file.getName(), file.getModifiedTime());
+        }
+      }
     }
-    pageToken = changes.getNewStartPageToken();
+    System.out.println(changeMap);
+    System.out.println(tmpChangeMap);
+    for(String s: changeMap.keySet()) {
+      if (tmpChangeMap.get(s) == null) {
+        System.out.println("Change detected!");
+        System.out.println("File " + s + " has been deleted from Google Drive.");
+        changed = true;
+        deleteLocalFile(s);
+      }
+      else {
+        if (!tmpChangeMap.get(s).equals(changeMap.get(s))) {
+          System.out.println("Change detected!");
+          System.out.println("File " + s + " has been modified in Google Drive.");
+          System.out.println("Local file will be updated.");
+          downloadFile(s);
+          System.out.println("File " + s + " has been updated at local folder.");
+          changed = true;
+        }
+      }
+    }
+    for(String s: tmpChangeMap.keySet()) {
+      if (changeMap.get(s) == null) {
+        System.out.println("Change detected!");
+        System.out.println("File " + s + " has been added to Google Drive");
+        System.out.println("It will be downloaded to local folder.");
+        downloadFile(s);
+        System.out.println("File " + s + " has been downloaded to local folder.");
+        changed = true;
+      }
+    }
+    changeMap.clear();
+    for(String s: tmpChangeMap.keySet()) {
+      changeMap.put(s, tmpChangeMap.get(s));
+    }
+    tmpChangeMap.clear();
+    if (!changed) {
+      System.out.println("No change is detected!");
+    }
   }
 
   public List<File> getFileList() throws IOException {
     // setPageSize's default value is 100, max value is 1000
     // Its value must be 1000 in production
     FileList response = service.files().list()
-          .setPageSize(20)
+          .setPageSize(100)
           .setFields("nextPageToken, files(id, name, parents, trashed, mimeType, modifiedTime, md5Checksum)")
           .execute();
     List<File> fileList = response.getFiles();
@@ -228,13 +290,14 @@ public class DriveConnection {
     for(File file: fileList) {
       String parentID = file.getId();
       if(file.getParents() != null && !file.getTrashed()) {
-        System.out.println(file.getName());
+        // System.out.println(file.getName());
         for(String p: file.getParents()) {
           parentID = p;
         }
         if (checkFileInFolder(parentID)) {
           fileIdMap.put(file.getName(), file.getId());
           fileMimeMap.put(file.getName(), file.getMimeType());
+          tmpChangeMap.put(file.getName(), file.getModifiedTime());
         }
       }
     }
@@ -299,7 +362,6 @@ public class DriveConnection {
         service.files().get(fileId)
             .executeMediaAndDownloadTo(outputStream);
       }
-      System.out.println(getFilePath(fileName));
       FileOutputStream fos = new FileOutputStream(getFilePath(fileName));
       fos.write(outputStream.toByteArray());
       fos.close();
