@@ -56,7 +56,6 @@ class ServerThread extends Thread {
                 } else if (line.startsWith("CORRECT")) {
                     sendToClient("CORRECT");
                 } else if (line.startsWith("SENDING")) {
-                    Set<String> changedFiles = FileUtils.readLog(directory, CHANGE_FILES_LOG_NAME);
                     sendToClient("SEND");
                     FileTransmissionModel f = fsThread.tryReceiveFile();
                     sendToClient(f.getHash());
@@ -64,8 +63,6 @@ class ServerThread extends Thread {
                     if (answer.equals("CORRECT")) {
                         sendToClient("CORRECT");
                         fsThread.writeModelToPath(directory, f);
-                        changedFiles.add(f.getFilename());
-                        FileUtils.saveLog(changedFiles, directory, CHANGE_FILES_LOG_NAME); 
                     }
                 } else if (line.startsWith("HASH")) {
                     HashMap<String, FileData> files = getLocalFiles();
@@ -95,6 +92,11 @@ class ServerThread extends Thread {
                     }
                 }
                 FileUtils.saveLog(getLocalFileNames(), directory, PREV_FILES_LOG_NAME);
+                Set<String> localHashes = new HashSet<>();
+                for (String file : getLocalFileNames()) {
+                    localHashes.add(file + "-" + getLocalFiles().get(file).getHash());
+                }
+                FileUtils.saveLog(localHashes, directory, CHANGE_FILES_LOG_NAME);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -167,9 +169,18 @@ class ServerThread extends Thread {
     }
 
     // TODO: write docstring
-    private Set<String> getAndClearChangedFiles(){
-        Set<String> changedFiles = FileUtils.readLog(directory, CHANGE_FILES_LOG_NAME);
-        FileUtils.saveLog(new HashSet<String>(), directory, CHANGE_FILES_LOG_NAME);
+    private Set<String> getChangedFiles() throws NoSuchAlgorithmException, IOException {
+        Set<String> prevFiles = FileUtils.readLog(directory, CHANGE_FILES_LOG_NAME);
+        HashMap<String, FileData> locals = getLocalFiles();
+        Set<String> changedFiles = new HashSet<>();
+        for (String file : prevFiles) {
+            String[] data = file.split("-");
+            String localHash = locals.get(data[0]).getHash();
+            String oldHash = data[1];
+            if (!oldHash.equals(localHash)){
+                changedFiles.add(data[0]);
+            }
+        }
         return changedFiles;
     }
 
