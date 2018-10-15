@@ -52,6 +52,7 @@ class ServerThread extends Thread {
                 } else if (line.startsWith("CORRECT")) {
                     sendToClient("CORRECT");
                 } else if (line.startsWith("SENDING")) {
+                    Set<String> changedFiles = FileUtils.readLog("fileName"); // TODO: filename
                     sendToClient("SEND");
                     FileTransmissionModel f = fsThread.tryReceiveFile();
                     sendToClient(f.getHash());
@@ -59,6 +60,8 @@ class ServerThread extends Thread {
                     if (answer.equals("CORRECT")) {
                         sendToClient("CORRECT");
                         fsThread.writeModelToPath(directory, f);
+                        changedFiles.add(f.getFilename());
+                        FileUtils.saveLog(changedFiles, "fileName"); // TODO: filename
                     }
                 } else if (line.startsWith("HASH")) {
                     HashMap<String, FileData> files = getLocalFiles();
@@ -76,7 +79,7 @@ class ServerThread extends Thread {
                     FileUtils.deleteFile(fileName);
                     sendToClient("DELETED");
                 } else if (line.startsWith("REMOVE")) {
-                    ArrayList<String>  filesToDelete = getFilesToDelete("fileName", getLocalFileNames()); // TODO: filename
+                    Set<String>  filesToDelete = getFilesToDelete("fileName", getLocalFileNames()); // TODO: filename
                     sendToClient("SENDING");
                     String response = "";
                     for (String file : filesToDelete) {
@@ -87,7 +90,7 @@ class ServerThread extends Thread {
                         
                     }
                 }
-                FileUtils.savePreviousFiles(getLocalFileNames(), "filename"); // TODO: filename
+                FileUtils.saveLog(getLocalFileNames(), "filename"); // TODO: filename
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -142,6 +145,7 @@ class ServerThread extends Thread {
         return files;
     }
 
+    // TODO: write docstring
     private void sendToClient(String s) {
         System.out.println("Send " + s);
         os.write(s + "\n");
@@ -149,8 +153,24 @@ class ServerThread extends Thread {
     }
 
     // TODO: write docstring
-    private ArrayList<String> getFilesToDelete(String fileName, Set<String> files){
-        ArrayList<String> previousFiles = (ArrayList<String>) FileUtils.readPreviousFiles(fileName);
+    private Set<String> getAddedFiles(String fileName, Set<String> files){
+        Set<String> previousFiles = FileUtils.readLog(fileName);
+        for (String file : previousFiles) {
+            files.remove(file);
+        }
+        return files;
+    }
+
+    // TODO: write docstring
+    private Set<String> getAndClearChangedFiles(String fileName){
+        Set<String> changedFiles = FileUtils.readLog(fileName);
+        FileUtils.saveLog(new HashSet<String>(), fileName);
+        return changedFiles;
+    }
+
+    // TODO: write docstring
+    private Set<String> getFilesToDelete(String fileName, Set<String> files){
+        Set<String> previousFiles = FileUtils.readLog(fileName);
         for (String file : files) {
             previousFiles.remove(file);
         }

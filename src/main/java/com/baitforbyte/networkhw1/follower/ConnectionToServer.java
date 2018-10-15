@@ -45,7 +45,7 @@ public class ConnectionToServer extends BaseClient {
     public void tasks() throws IOException, NoSuchAlgorithmException {
         HashMap<String, FileData> files = getHashesFromServer();
         Set<String> localFileNames = compareHash(files);
-        FileUtils.savePreviousFiles(localFileNames, "filename"); // TODO: filename
+        FileUtils.saveLog(localFileNames, "filename"); // TODO: filename
     }
 
     /**
@@ -147,7 +147,7 @@ public class ConnectionToServer extends BaseClient {
         ArrayList<String> filesToRequest = new ArrayList<String>();
         HashMap<String, FileData> localFiles = getLocalFiles();
         Set<String> localFileNames = getLocalFiles().keySet();
-        ArrayList<String> filesToDelete = getFilesToDelete("fileName", localFileNames); // TODO: filename
+        Set<String> filesToDelete = getFilesToDelete("fileName", localFileNames); // TODO: filename
 
         for (String fileName : files.keySet()) {
             if (localFiles.containsKey(fileName)) {
@@ -179,7 +179,7 @@ public class ConnectionToServer extends BaseClient {
     }
 
     // TODO: write docstring
-    private void deleteFilesAtServer(ArrayList<String> filesToDelete) throws IOException {
+    private void deleteFilesAtServer(Set<String> filesToDelete) throws IOException {
         for (String file : filesToDelete) {
             String response = sendForAnswer("DELETE");
             if(response.equals("SEND")){
@@ -247,8 +247,8 @@ public class ConnectionToServer extends BaseClient {
     }
 
     // TODO: write docstring
-    private ArrayList<String> getFilesToDelete(String fileName, Set<String> files){
-        ArrayList<String> previousFiles = (ArrayList<String>) FileUtils.readPreviousFiles(fileName);
+    private Set<String> getFilesToDelete(String fileName, Set<String> files){
+        Set<String> previousFiles = FileUtils.readLog(fileName);
         for (String file : files) {
             previousFiles.remove(file);
         }

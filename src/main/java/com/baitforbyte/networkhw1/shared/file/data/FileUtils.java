@@ -10,8 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -137,10 +136,10 @@ public final class FileUtils {
     }
 
     // TODO: write docstring
-    public static List<String> readPreviousFiles(String fileName){
-        List<String> files = new ArrayList<>();
+    public static Set<String> readLog(String fileName){
+        Set<String> files = new HashSet<>();
         try (Stream<String> stream = Files.lines(Paths.get(fileName))){
-            files = stream.collect(Collectors.toList());
+            files = stream.collect(Collectors.toSet());
         }catch (IOException e) {
             e.printStackTrace();
         }
@@ -148,7 +147,7 @@ public final class FileUtils {
     }
 
     // TODO: write docstring
-    public static void savePreviousFiles(Set<String> files, String fileName){
+    public static void saveLog(Set<String> files, String fileName){
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(fileName))) {
             for (String file : files) {
                 writer.write(file + "\r\n");
