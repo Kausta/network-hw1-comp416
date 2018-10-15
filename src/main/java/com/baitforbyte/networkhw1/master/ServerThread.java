@@ -1,19 +1,24 @@
 package com.baitforbyte.networkhw1.master;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+
 import com.baitforbyte.networkhw1.follower.FileData;
+import com.baitforbyte.networkhw1.shared.file.data.ChangeTracking;
+import com.baitforbyte.networkhw1.shared.file.data.Constants;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServerThread;
 
-import java.io.*;
-import java.net.Socket;
-import java.security.NoSuchAlgorithmException;
-import java.util.*;
-
 class ServerThread extends Thread {
 
-    private final String PREV_FILES_LOG_NAME = "prev.log";
-    private final String CHANGE_FILES_LOG_NAME = "change.log";
 
     private final IFileServerThread fsThread;
     protected BufferedReader is;
@@ -80,7 +85,7 @@ class ServerThread extends Thread {
                     FileUtils.deleteFile(directory, fileName);
                     sendToClient("DELETED");
                 } else if (line.startsWith("REMOVE")) {
-                    Set<String>  filesToDelete = getFilesToDelete();
+                    Set<String> filesToDelete = ChangeTracking.getFilesToDelete(directory);
                     sendToClient("SENDING");
                     String response = "";
                     for (String file : filesToDelete) {
@@ -91,12 +96,12 @@ class ServerThread extends Thread {
                         
                     }
                 }
-                FileUtils.saveLog(getLocalFileNames(), directory, PREV_FILES_LOG_NAME);
+                FileUtils.saveLog(ChangeTracking.getLocalFileNames(directory), directory, Constants.PREV_FILES_LOG_NAME);
                 Set<String> localHashes = new HashSet<>();
-                for (String file : getLocalFileNames()) {
+                for (String file : ChangeTracking.getLocalFileNames(directory)) {
                     localHashes.add(file + "-" + getLocalFiles().get(file).getHash());
                 }
-                FileUtils.saveLog(localHashes, directory, CHANGE_FILES_LOG_NAME);
+                FileUtils.saveLog(localHashes, directory, Constants.CHANGE_FILES_LOG_NAME);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -158,50 +163,7 @@ class ServerThread extends Thread {
         os.flush();
     }
 
-    // TODO: write docstring
-    private Set<String> getAddedFiles() throws NoSuchAlgorithmException, IOException {
-        Set<String> previousFiles = FileUtils.readLog(directory, PREV_FILES_LOG_NAME);
-        Set<String> files = getLocalFileNames();
-        for (String file : previousFiles) {
-            files.remove(file);
-        }
-        return files;
-    }
 
-    // TODO: write docstring
-    private Set<String> getChangedFiles() throws NoSuchAlgorithmException, IOException {
-        Set<String> prevFiles = FileUtils.readLog(directory, CHANGE_FILES_LOG_NAME);
-        HashMap<String, FileData> locals = getLocalFiles();
-        Set<String> changedFiles = new HashSet<>();
-        for (String file : prevFiles) {
-            String[] data = file.split("-");
-            String localHash = locals.get(data[0]).getHash();
-            String oldHash = data[1];
-            if (!oldHash.equals(localHash)){
-                changedFiles.add(data[0]);
-            }
-        }
-        return changedFiles;
-    }
+    
 
-    // TODO: write docstring
-    private Set<String> getFilesToDelete() throws NoSuchAlgorithmException, IOException {
-        Set<String> previousFiles = FileUtils.readLog(directory, PREV_FILES_LOG_NAME);
-        for (String file : getLocalFileNames()) {
-            previousFiles.remove(file);
-        }
-        return previousFiles;
-    }
-
-    private Set<String> getLocalFileNames() throws IOException, NoSuchAlgorithmException {
-        Set<String> files = new HashSet<String>();
-        FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
-
-        for (FileTransmissionModel file : fileModels) {
-            if(!file.getFilename().equals(PREV_FILES_LOG_NAME) && !file.getFilename().equals(CHANGE_FILES_LOG_NAME)){
-                files.add(file.getFilename());
-            }
-        }
-        return files;
-    }
 }

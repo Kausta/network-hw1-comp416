@@ -1,15 +1,5 @@
 package com.baitforbyte.networkhw1.master;
 
-import com.baitforbyte.networkhw1.follower.FileData;
-import com.baitforbyte.networkhw1.shared.base.BaseServer;
-import com.baitforbyte.networkhw1.shared.base.ConnectionException;
-import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
-import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
-import com.baitforbyte.networkhw1.shared.file.master.FileServerThread;
-import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
-import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
-import com.google.api.services.drive.model.File;
-
 import java.io.IOException;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
@@ -18,7 +8,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
+import com.baitforbyte.networkhw1.follower.FileData;
+import com.baitforbyte.networkhw1.shared.base.BaseServer;
+import com.baitforbyte.networkhw1.shared.base.ConnectionException;
+import com.baitforbyte.networkhw1.shared.file.data.ChangeTracking;
+import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
+import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
+import com.baitforbyte.networkhw1.shared.file.master.FileServerThread;
+import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
+import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 
 
 public class Server extends BaseServer {
@@ -59,6 +61,11 @@ public class Server extends BaseServer {
                 e.printStackTrace();
             }
         }, 0, 15, TimeUnit.SECONDS);*/
+
+
+        Set<String> changedSet = ChangeTracking.getChangedFiles(directory);
+        Set<String> createdSet = ChangeTracking.getAddedFiles(directory);
+        Set<String> deletedSet = ChangeTracking.getFilesToDelete(directory);
     }
 
     public void startWorking() throws IOException, NoSuchAlgorithmException {

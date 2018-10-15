@@ -1,6 +1,8 @@
 package com.baitforbyte.networkhw1.follower;
 
 import com.baitforbyte.networkhw1.shared.base.BaseClient;
+import com.baitforbyte.networkhw1.shared.file.data.ChangeTracking;
+import com.baitforbyte.networkhw1.shared.file.data.Constants;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionException;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
@@ -21,7 +23,6 @@ public class ConnectionToServer extends BaseClient {
     private final int LOOP_TIME = 30; 
     private final int LOOP_DELAY = 0; 
     private final TimeUnit LOOP_UNIT = TimeUnit.SECONDS; 
-    private final String PREV_FILES_LOG_NAME = "prev.log";
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -44,7 +45,7 @@ public class ConnectionToServer extends BaseClient {
     public void tasks() throws IOException, NoSuchAlgorithmException {
         HashMap<String, FileData> files = getHashesFromServer();
         Set<String> localFileNames = compareHash(files);
-        FileUtils.saveLog(localFileNames, directory, PREV_FILES_LOG_NAME);
+        FileUtils.saveLog(localFileNames, directory, Constants.PREV_FILES_LOG_NAME);
     }
 
     /**
@@ -144,8 +145,8 @@ public class ConnectionToServer extends BaseClient {
     public Set<String> compareHash(HashMap<String, FileData> files) throws NoSuchAlgorithmException, IOException, FileTransmissionException {
         ArrayList<String> filesToSend = new ArrayList<String>();
         ArrayList<String> filesToRequest = new ArrayList<String>();
-        HashMap<String, FileData> localFiles = getLocalFiles();
-        Set<String> filesToDelete = getFilesToDelete(); 
+        HashMap<String, FileData> localFiles = ChangeTracking.getLocalFiles(directory);
+        Set<String> filesToDelete = ChangeTracking.getFilesToDelete(directory); 
 
         for (String fileName : files.keySet()) {
             if (localFiles.containsKey(fileName)) {
@@ -225,38 +226,10 @@ public class ConnectionToServer extends BaseClient {
                 }
             }
         }
-    }
-
-    /**
-     * Gets local files in the designated folder
-     *
-     * @return Hashmap of files, hashes and last changed times
-     * @throws IOException              When a file reading exception occurs
-     * @throws NoSuchAlgorithmException When hash function is not found, should not occur with the algorithms we use
-     */
-    private HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {
-        HashMap<String, FileData> files = new HashMap<>();
-        FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
-
-        for (FileTransmissionModel file : fileModels) {
-            if(!file.getFilename().equals(PREV_FILES_LOG_NAME)){
-                files.put(file.getFilename(), new FileData(file.getHash(), file.getLastModifiedTimestamp()));
-            }
-        }
-        return files;
-    }
+    }    
 
     // TODO: write docstring
-    private Set<String> getFilesToDelete() throws NoSuchAlgorithmException, IOException {
-        Set<String> previousFiles = FileUtils.readLog(directory, PREV_FILES_LOG_NAME);
-        for (String file : getLocalFiles().keySet()) {
-            previousFiles.remove(file);
-        }
-        return previousFiles;
-    }
-
-    // TODO: write docstring
-    private void requestFilesToDeleteFromServer() throws IOException {
+    public void requestFilesToDeleteFromServer() throws IOException {
         String response = sendForAnswer("REMOVE");
         if(response.equals("SENDING")){
             response = is.readLine();
