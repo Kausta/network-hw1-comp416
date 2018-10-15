@@ -1,9 +1,6 @@
 package com.baitforbyte.networkhw1.shared.util;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.InetAddress;
-import java.nio.file.Files;
 import java.util.Scanner;
 
 /**
@@ -95,8 +92,8 @@ public final class Input {
      *
      * @return Application Mode
      */
-    public ApplicationMode getApplicationMode() {
-        ApplicationMode mode = null;
+    public ApplicationMode getApplicationMode(String arg) {
+        ApplicationMode mode = arg != null ? parseMode(arg) : null;
         while (mode == null) {
             System.out.print("Please choose application mode: ( [M]aster, [F]ollower ): ");
             mode = parseMode(input.nextLine());
@@ -121,29 +118,6 @@ public final class Input {
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
-        }
-    }
-
-    /**
-     * Gets the port number from the user
-     *
-     * @return Valid port number
-     */
-    public String getDirectory(String message) {
-        while (true) {
-            try {
-                System.out.print(message);
-                String dir = input.nextLine();
-                boolean correct = Files.exists(new File(dir).toPath());
-                if (correct) {
-                    return dir;
-                } else {
-                    throw new IOException("Directory not found");
-                }
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-            }
-
         }
     }
 

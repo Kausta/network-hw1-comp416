@@ -7,17 +7,25 @@ import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.FileServerThread;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
+import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
+import com.google.api.services.drive.model.File;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
+import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.*;
 
 
 public class Server extends BaseServer {
     private IFileServer fileServer;
-    private File directory;
+    private String directory;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private DriveConnection drive;
 
     /**
      * Initiates a server socket on the input port, listens to the line, on receiving an incoming
@@ -25,11 +33,91 @@ public class Server extends BaseServer {
      *
      * @param port Server port
      */
-    public Server(int port, IFileServer fileServer, String directoryPath) throws IOException {
+    public Server(int port, IFileServer fileServer) throws IOException, GeneralSecurityException {
         super(port);
         this.fileServer = fileServer;
-        directory = new File(directoryPath);
+        this.directory = DirectoryUtils.getDirectoryInDesktop("DriveCloud");
+        drive = new DriveConnection();
+        drive.checkFolderIsExist();
+        // drive.getPageToken();
+        // drive.getFileList();
+        /*for(File file: drive.getFileList()){
+            System.out.println(file);
+        }*/
+        /*HashMap<String, FileData> tmpFileDataMap = drive.getFileDataMap();
+        for(String e: tmpFileDataMap.keySet()) {
+            FileData tmpFileData = tmpFileDataMap.get(e);
+            System.out.println(e);
+            System.out.println(tmpFileData.getHash());
+        }*/
+        //drive.deleteFile("perfection.txt");
+        drive.updateFile("perfection.txt");
+        /*scheduler.scheduleAtFixedRate(() -> {
+            try {
+                drive.detectChanges();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, 0, 15, TimeUnit.SECONDS);*/
     }
+
+    public void startWorking() throws IOException, NoSuchAlgorithmException {
+        compareHash(drive.getFileDataMap());
+    }
+
+    public void compareHash(HashMap<String, FileData> files) throws IOException, NoSuchAlgorithmException {
+        System.out.println("In Compare Hash");
+        List<String> filesToSend = new ArrayList<String>();
+        List<String> filesToRequest = new ArrayList<String>();
+        HashMap<String, FileData> localFiles = getLocalFiles();
+        for (String fileName : files.keySet()) {
+            if (localFiles.containsKey(fileName)) {
+                FileData local = localFiles.get(fileName);
+                FileData cloud = files.get(fileName);
+                System.out.println("Local: " + local.getHash() + " - Cloud: " + cloud.getHash());
+                if (!local.getHash().equals(cloud.getHash())) {
+                    long dateDiff = local.getLastChangeTime() - cloud.getLastChangeTime();
+                    if (dateDiff > 0) {
+                        filesToSend.add(fileName);
+                    } else if (dateDiff < 0) {
+                        filesToRequest.add(fileName);
+                    }
+                }
+                localFiles.remove(fileName);
+            } else {
+                filesToRequest.add(fileName);
+            }
+        }
+        System.out.println(Arrays.deepToString(filesToRequest.toArray()));
+        filesToSend.addAll(localFiles.keySet());
+        System.out.println(Arrays.deepToString(filesToSend.toArray()));
+        receiveFiles(filesToRequest);
+        sendFiles(filesToSend);
+    }
+
+    public void sendFiles(List<String> files) throws IOException {
+        for(String file: files) {
+            drive.uploadFile(file);
+        }
+    }
+
+    public void receiveFiles(List<String> files) throws IOException {
+        for(String file: files) {
+            drive.downloadFile(file);
+        }
+    }
+
+    private HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {
+        HashMap<String, FileData> files = new HashMap<>();
+        FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
+
+        for (FileTransmissionModel file : fileModels) {
+            files.put(file.getFilename(), new FileData(file.getHash(), file.getLastModifiedTimestamp()));
+        }
+        return files;
+    }
+
+    // public void deleteFiles() {}
 
     /**
      * Listens to the line and starts a connection on receiving a request from the client
@@ -49,9 +137,9 @@ public class Server extends BaseServer {
             throw new ConnectionException("Different clients connected to server and file server, error");
         }
 
-        ServerThread st = new ServerThread(s, fsThread);
+        ServerThread st = new ServerThread(s, fsThread, directory);
         st.start();
     }
-    
+
 }
 

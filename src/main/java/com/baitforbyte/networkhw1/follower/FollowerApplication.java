@@ -8,13 +8,11 @@ public class FollowerApplication {
     private String ip;
     private int port;
     private int filePort;
-    private String folderDirectory;
 
-    public FollowerApplication(String ip, int port, int filePort, String folderDirectory) {
+    public FollowerApplication(String ip, int port, int filePort) {
         this.ip = ip;
         this.port = port;
         this.filePort = filePort;
-        this.folderDirectory = folderDirectory;
     }
 
     public void run() {
@@ -24,10 +22,10 @@ public class FollowerApplication {
             fileClient = new FileClient(ip, filePort);
             fileClient.connect();
 
-            connectionToServer = new ConnectionToServer(ip, port, fileClient, folderDirectory);
+            connectionToServer = new ConnectionToServer(ip, port, fileClient);
             connectionToServer.connect();
 
-            while(true){
+            while (true) {
                 Thread.sleep(5);
             }
         } catch (IOException ex) {
