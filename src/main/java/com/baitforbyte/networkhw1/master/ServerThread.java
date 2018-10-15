@@ -11,6 +11,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 class ServerThread extends Thread {
+
+    private final String PREV_FILES_LOG_NAME = "prev.log";
+    private final String CHANGE_FILES_LOG_NAME = "change.log";
+
     private final IFileServerThread fsThread;
     protected BufferedReader is;
     protected PrintWriter os;
@@ -52,7 +56,7 @@ class ServerThread extends Thread {
                 } else if (line.startsWith("CORRECT")) {
                     sendToClient("CORRECT");
                 } else if (line.startsWith("SENDING")) {
-                    Set<String> changedFiles = FileUtils.readLog("fileName"); // TODO: filename
+                    Set<String> changedFiles = FileUtils.readLog(directory, CHANGE_FILES_LOG_NAME);
                     sendToClient("SEND");
                     FileTransmissionModel f = fsThread.tryReceiveFile();
                     sendToClient(f.getHash());
@@ -61,7 +65,7 @@ class ServerThread extends Thread {
                         sendToClient("CORRECT");
                         fsThread.writeModelToPath(directory, f);
                         changedFiles.add(f.getFilename());
-                        FileUtils.saveLog(changedFiles, "fileName"); // TODO: filename
+                        FileUtils.saveLog(changedFiles, directory, CHANGE_FILES_LOG_NAME); 
                     }
                 } else if (line.startsWith("HASH")) {
                     HashMap<String, FileData> files = getLocalFiles();
@@ -76,10 +80,10 @@ class ServerThread extends Thread {
                 } else if (line.startsWith("DELETE")) {
                     sendToClient("SEND");
                     String fileName = is.readLine();
-                    FileUtils.deleteFile(fileName);
+                    FileUtils.deleteFile(directory, fileName);
                     sendToClient("DELETED");
                 } else if (line.startsWith("REMOVE")) {
-                    Set<String>  filesToDelete = getFilesToDelete("fileName", getLocalFileNames()); // TODO: filename
+                    Set<String>  filesToDelete = getFilesToDelete();
                     sendToClient("SENDING");
                     String response = "";
                     for (String file : filesToDelete) {
@@ -90,7 +94,7 @@ class ServerThread extends Thread {
                         
                     }
                 }
-                FileUtils.saveLog(getLocalFileNames(), "filename"); // TODO: filename
+                FileUtils.saveLog(getLocalFileNames(), directory, PREV_FILES_LOG_NAME);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -153,8 +157,9 @@ class ServerThread extends Thread {
     }
 
     // TODO: write docstring
-    private Set<String> getAddedFiles(String fileName, Set<String> files){
-        Set<String> previousFiles = FileUtils.readLog(fileName);
+    private Set<String> getAddedFiles() throws NoSuchAlgorithmException, IOException {
+        Set<String> previousFiles = FileUtils.readLog(directory, PREV_FILES_LOG_NAME);
+        Set<String> files = getLocalFileNames();
         for (String file : previousFiles) {
             files.remove(file);
         }
@@ -162,16 +167,16 @@ class ServerThread extends Thread {
     }
 
     // TODO: write docstring
-    private Set<String> getAndClearChangedFiles(String fileName){
-        Set<String> changedFiles = FileUtils.readLog(fileName);
-        FileUtils.saveLog(new HashSet<String>(), fileName);
+    private Set<String> getAndClearChangedFiles(){
+        Set<String> changedFiles = FileUtils.readLog(directory, CHANGE_FILES_LOG_NAME);
+        FileUtils.saveLog(new HashSet<String>(), directory, CHANGE_FILES_LOG_NAME);
         return changedFiles;
     }
 
     // TODO: write docstring
-    private Set<String> getFilesToDelete(String fileName, Set<String> files){
-        Set<String> previousFiles = FileUtils.readLog(fileName);
-        for (String file : files) {
+    private Set<String> getFilesToDelete() throws NoSuchAlgorithmException, IOException {
+        Set<String> previousFiles = FileUtils.readLog(directory, PREV_FILES_LOG_NAME);
+        for (String file : getLocalFileNames()) {
             previousFiles.remove(file);
         }
         return previousFiles;
@@ -182,7 +187,9 @@ class ServerThread extends Thread {
         FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
 
         for (FileTransmissionModel file : fileModels) {
-            files.add(file.getFilename());
+            if(!file.getFilename().equals(PREV_FILES_LOG_NAME) && !file.getFilename().equals(CHANGE_FILES_LOG_NAME)){
+                files.add(file.getFilename());
+            }
         }
         return files;
     }

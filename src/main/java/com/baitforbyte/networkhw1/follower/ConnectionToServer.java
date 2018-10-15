@@ -8,8 +8,6 @@ import com.baitforbyte.networkhw1.shared.file.follower.IFileClient;
 import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -23,6 +21,7 @@ public class ConnectionToServer extends BaseClient {
     private final int LOOP_TIME = 30; 
     private final int LOOP_DELAY = 0; 
     private final TimeUnit LOOP_UNIT = TimeUnit.SECONDS; 
+    private final String PREV_FILES_LOG_NAME = "prev.log";
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -45,7 +44,7 @@ public class ConnectionToServer extends BaseClient {
     public void tasks() throws IOException, NoSuchAlgorithmException {
         HashMap<String, FileData> files = getHashesFromServer();
         Set<String> localFileNames = compareHash(files);
-        FileUtils.saveLog(localFileNames, "filename"); // TODO: filename
+        FileUtils.saveLog(localFileNames, directory, PREV_FILES_LOG_NAME);
     }
 
     /**
@@ -146,8 +145,7 @@ public class ConnectionToServer extends BaseClient {
         ArrayList<String> filesToSend = new ArrayList<String>();
         ArrayList<String> filesToRequest = new ArrayList<String>();
         HashMap<String, FileData> localFiles = getLocalFiles();
-        Set<String> localFileNames = getLocalFiles().keySet();
-        Set<String> filesToDelete = getFilesToDelete("fileName", localFileNames); // TODO: filename
+        Set<String> filesToDelete = getFilesToDelete(); 
 
         for (String fileName : files.keySet()) {
             if (localFiles.containsKey(fileName)) {
@@ -175,7 +173,7 @@ public class ConnectionToServer extends BaseClient {
         
         sendFilesToServer(filesToSend);       
         
-        return localFileNames;
+        return localFiles.keySet();
     }
 
     // TODO: write docstring
@@ -241,15 +239,17 @@ public class ConnectionToServer extends BaseClient {
         FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
 
         for (FileTransmissionModel file : fileModels) {
-            files.put(file.getFilename(), new FileData(file.getHash(), file.getLastModifiedTimestamp()));
+            if(!file.getFilename().equals(PREV_FILES_LOG_NAME)){
+                files.put(file.getFilename(), new FileData(file.getHash(), file.getLastModifiedTimestamp()));
+            }
         }
         return files;
     }
 
     // TODO: write docstring
-    private Set<String> getFilesToDelete(String fileName, Set<String> files){
-        Set<String> previousFiles = FileUtils.readLog(fileName);
-        for (String file : files) {
+    private Set<String> getFilesToDelete() throws NoSuchAlgorithmException, IOException {
+        Set<String> previousFiles = FileUtils.readLog(directory, PREV_FILES_LOG_NAME);
+        for (String file : getLocalFiles().keySet()) {
             previousFiles.remove(file);
         }
         return previousFiles;
@@ -261,7 +261,7 @@ public class ConnectionToServer extends BaseClient {
         if(response.equals("SENDING")){
             response = is.readLine();
             while(!response.equals("DONE")){                
-                Files.delete(Paths.get(response));
+                FileUtils.deleteFile(directory, response);
                 response = sendForAnswer("DELETED");
             }
         }
