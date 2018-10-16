@@ -32,9 +32,16 @@ public class Server extends BaseServer {
 
     /**
      * Initiates a server socket on the input port, listens to the line, on receiving an incoming
-     * connection creates and starts a ServerThread on the client
-     *
+     * connection creates and starts a ServerThread on the client. Also it is responsible for synchronizing the master side.
+     * First, it initialize the Drive object, check the DriveCloud folder is exist and read the Google Drive Change Log from
+     * local folder to detect changes on Google Drive while server is closed. After that, it looks for changes on master side in a scheduler
+     * To do this, first look for the changes on Drive with calling the function 'detectChanges()' and synchronize the necessary files.
+     * Then, it looks the changes on local folder and synchronize them with the Google Drive.
      * @param port Server port
+     * @param fileServer file server object
+     * @param filePort File port
+     * @throws IOException if drive object returns null in some of the methods
+     * @throws GeneralSecurityException
      */
     public Server(int port, IFileServer fileServer, int filePort) throws IOException, GeneralSecurityException {
         super(port);
@@ -43,23 +50,9 @@ public class Server extends BaseServer {
         this.filePort = filePort;
         drive = new DriveConnection();
         drive.checkFolderIsExist();
-        //drive.initializeChangeMap();
         drive.readChangeMap();
-        // drive.getFileList();
-        /*for(File file: drive.getFileList()){
-            System.out.println(file);
-        }*/
-        /*HashMap<String, FileData> tmpFileDataMap = drive.getFileDataMap();
-        for(String e: tmpFileDataMap.keySet()) {
-            FileData tmpFileData = tmpFileDataMap.get(e);
-            System.out.println(e);
-            System.out.println(tmpFileData.getHash());
-        }*/
-        //drive.deleteFile("perfection.txt");
-        // drive.updateFile("perfection.txt");
         scheduler.scheduleAtFixedRate(() -> {
             try {
-                // Don't forget to call getPageToken() before scheduler
                 System.out.println("");
                 drive.getFileList();
                 Set<String> changedSet = ChangeTracking.getChangedFiles(directory);
@@ -106,9 +99,6 @@ public class Server extends BaseServer {
                 e.printStackTrace();
             }
         }, 0, PERIOD, TimeUnit.SECONDS);
-
-        // ornekler
-
     }
 
     private void syncLogs() throws NoSuchAlgorithmException, IOException {
@@ -118,10 +108,6 @@ public class Server extends BaseServer {
             localHashes.add(file + "-" + getLocalFiles().get(file).getHash());
         }
         FileUtils.saveLog(localHashes, directory, Constants.CHANGE_FILES_LOG_NAME);
-    }
-
-    public void startWorking() throws IOException, NoSuchAlgorithmException {
-        compareHash(drive.getFileDataMap());
     }
 
     public void compareHash(HashMap<String, FileData> files) throws IOException, NoSuchAlgorithmException {
