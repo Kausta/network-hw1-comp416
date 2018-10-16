@@ -290,6 +290,7 @@ public class ConnectionToServer extends BaseClient {
         String response = sendForAnswer("REMOVE");
         if (response.equals("SENDING")) {
             response = is.readLine();
+            System.out.println("[CLIENT] Response: " + response);
             while (!response.equals("DONE")) {
                 removedFiles.add(response);
                 FileUtils.deleteFile(directory, response);

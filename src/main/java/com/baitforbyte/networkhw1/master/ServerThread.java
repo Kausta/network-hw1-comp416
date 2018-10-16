@@ -113,11 +113,10 @@ class ServerThread extends Thread {
                             sendToClient(file);
                             response = is.readLine();
                         }
+                        response = "";
                     }
                     sendToClient("DONE");
                 }
-
-                FileUtils.saveLog(getLocalFiles().keySet(), directory, Constants.PREV_FILES_LOG_NAME);
             }
         } catch (IOException e) {
             e.printStackTrace();
