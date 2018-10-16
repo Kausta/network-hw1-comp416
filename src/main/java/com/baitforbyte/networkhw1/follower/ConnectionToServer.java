@@ -1,18 +1,21 @@
 package com.baitforbyte.networkhw1.follower;
 
 import com.baitforbyte.networkhw1.shared.base.BaseClient;
-import com.baitforbyte.networkhw1.shared.file.data.ChangeTracking;
-import com.baitforbyte.networkhw1.shared.file.data.Constants;
-import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionException;
-import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
-import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
-import com.baitforbyte.networkhw1.shared.file.follower.IFileClient;
+import com.baitforbyte.networkhw1.shared.file.data.*;
+import com.baitforbyte.networkhw1.shared.file.follower.FileClient;
 import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Yahya Hassanzadeh on 20/09/2017.
@@ -20,24 +23,24 @@ import java.util.concurrent.*;
 
 public class ConnectionToServer extends BaseClient {
     private final String GET_HASH_MESSAGE = "HASH";
-    private final int LOOP_TIME = 30; 
-    private final int LOOP_DELAY = 0; 
-    private final TimeUnit LOOP_UNIT = TimeUnit.SECONDS; 
+    private final int LOOP_TIME = 30;
+    // Start after 3 seconds waiting for file client to connect ?
+    // TODO: Maybe not required
+    private final int LOOP_DELAY = 3;
+    private final TimeUnit LOOP_UNIT = TimeUnit.SECONDS;
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
     protected BufferedReader is;
     protected PrintWriter os;
-    private IFileClient client;
+    private FileClient client = null;
     private String directory;
 
     /**
      * @param address IP address of the server, if you are running the server on the same computer as client, put the address as "localhost"
      * @param port    port number of the server
      */
-    public ConnectionToServer(String address, int port, IFileClient fileClient) {
+    public ConnectionToServer(String address, int port) {
         super(address, port);
-        this.client = fileClient;
         this.directory = DirectoryUtils.getDirectoryInDesktop("CloudDrive1");
     }
 
@@ -56,11 +59,22 @@ public class ConnectionToServer extends BaseClient {
         super.connect();
         is = new BufferedReader(new InputStreamReader(getSocket().getInputStream()));
         os = new PrintWriter(getSocket().getOutputStream());
+
+        String portLine = sendForAnswer("CONNECTED");
+        try {
+            int filePort = Integer.parseInt(portLine);
+            String identifier = is.readLine();
+            client = new FileClient(getServerAddress(), filePort, identifier);
+            client.connect();
+        } catch (NumberFormatException ex) {
+            throw new IOException("Cannot parse port number, incorrect server!\nMessage: " + ex.getMessage(), ex);
+        }
+
         startWorkingLoop();
     }
 
     // TODO: write docstring
-    private void startWorkingLoop(){
+    private void startWorkingLoop() {
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 tasks();
@@ -105,6 +119,10 @@ public class ConnectionToServer extends BaseClient {
      */
     @Override
     public void disconnect() throws IOException {
+        if (client != null) {
+            client.disconnect();
+        }
+
         is.close();
         os.close();
         System.out.println("ConnectionToServer. SendForAnswer. Connection Closed");
@@ -146,7 +164,7 @@ public class ConnectionToServer extends BaseClient {
         ArrayList<String> filesToSend = new ArrayList<String>();
         ArrayList<String> filesToRequest = new ArrayList<String>();
         HashMap<String, FileData> localFiles = ChangeTracking.getLocalFiles(directory);
-        Set<String> filesToDelete = ChangeTracking.getFilesToDelete(directory); 
+        Set<String> filesToDelete = ChangeTracking.getFilesToDelete(directory);
 
         for (String fileName : files.keySet()) {
             if (localFiles.containsKey(fileName)) {
@@ -171,9 +189,9 @@ public class ConnectionToServer extends BaseClient {
         requestFilesToDeleteFromServer();
 
         requestFilesFromServer(filesToRequest);
-        
-        sendFilesToServer(filesToSend);       
-        
+
+        sendFilesToServer(filesToSend);
+
         return localFiles.keySet();
     }
 
@@ -181,9 +199,9 @@ public class ConnectionToServer extends BaseClient {
     private void deleteFilesAtServer(Set<String> filesToDelete) throws IOException {
         for (String file : filesToDelete) {
             String response = sendForAnswer("DELETE");
-            if(response.equals("SEND")){
+            if (response.equals("SEND")) {
                 response = sendForAnswer(file);
-                while(!response.equals("DELETED")){
+                while (!response.equals("DELETED")) {
                     response = sendForAnswer(file);
                 }
             }
@@ -226,14 +244,14 @@ public class ConnectionToServer extends BaseClient {
                 }
             }
         }
-    }    
+    }
 
     // TODO: write docstring
     public void requestFilesToDeleteFromServer() throws IOException {
         String response = sendForAnswer("REMOVE");
-        if(response.equals("SENDING")){
+        if (response.equals("SENDING")) {
             response = is.readLine();
-            while(!response.equals("DONE")){                
+            while (!response.equals("DONE")) {
                 FileUtils.deleteFile(directory, response);
                 response = sendForAnswer("DELETED");
             }

@@ -1,17 +1,19 @@
 package com.baitforbyte.networkhw1.shared.file.data;
 
+import com.baitforbyte.networkhw1.follower.FileData;
+
+import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.baitforbyte.networkhw1.follower.FileData;
-
 public final class ChangeTracking {
 
 
-    private ChangeTracking(){}
+    private ChangeTracking() {
+    }
 
     /**
      * Gets local files in the designated folder
@@ -25,7 +27,7 @@ public final class ChangeTracking {
         FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
 
         for (FileTransmissionModel file : fileModels) {
-            if(!file.getFilename().endsWith(".veryspeciallog")){
+            if (!file.getFilename().endsWith(".veryspeciallog")) {
                 files.put(file.getFilename(), new FileData(file.getHash(), file.getLastModifiedTimestamp()));
             }
         }
@@ -46,7 +48,7 @@ public final class ChangeTracking {
         FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
 
         for (FileTransmissionModel file : fileModels) {
-            if(!file.getFilename().endsWith(".veryspeciallog")){
+            if (!file.getFilename().endsWith(".veryspeciallog")) {
                 files.add(file.getFilename());
             }
         }
@@ -62,7 +64,7 @@ public final class ChangeTracking {
             String[] data = file.split("-");
             String localHash = locals.get(data[0]).getHash();
             String oldHash = data[1];
-            if (!oldHash.equals(localHash)){
+            if (!oldHash.equals(localHash)) {
                 changedFiles.add(data[0]);
             }
         }
@@ -78,6 +80,18 @@ public final class ChangeTracking {
             files.remove(file);
         }
         return files;
+    }
+
+    public static void createLogFiles(String directory) throws IOException {
+        String[] names = new String[]{Constants.CHANGE_FILES_LOG_NAME, Constants.PREV_FILES_LOG_NAME};
+        for (String name : names) {
+            File logFile = new File(directory, name);
+            if (!logFile.exists()) {
+                if (!logFile.createNewFile()) {
+                    System.out.println("Cannot create log file " + name);
+                }
+            }
+        }
     }
 
 }

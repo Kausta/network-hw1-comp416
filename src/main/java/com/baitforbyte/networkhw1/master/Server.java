@@ -1,5 +1,12 @@
 package com.baitforbyte.networkhw1.master;
 
+import com.baitforbyte.networkhw1.follower.FileData;
+import com.baitforbyte.networkhw1.shared.base.BaseServer;
+import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
+import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
+import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
+import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
+
 import java.io.IOException;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
@@ -8,26 +15,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.baitforbyte.networkhw1.follower.FileData;
-import com.baitforbyte.networkhw1.shared.base.BaseServer;
-import com.baitforbyte.networkhw1.shared.base.ConnectionException;
-import com.baitforbyte.networkhw1.shared.file.data.ChangeTracking;
-import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
-import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
-import com.baitforbyte.networkhw1.shared.file.master.FileServerThread;
-import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
-import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
-
 
 public class Server extends BaseServer {
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final int filePort;
+
     private IFileServer fileServer;
     private String directory;
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private DriveConnection drive;
 
     /**
@@ -36,10 +34,11 @@ public class Server extends BaseServer {
      *
      * @param port Server port
      */
-    public Server(int port, IFileServer fileServer) throws IOException, GeneralSecurityException {
+    public Server(int port, IFileServer fileServer, int filePort) throws IOException, GeneralSecurityException {
         super(port);
         this.fileServer = fileServer;
         this.directory = DirectoryUtils.getDirectoryInDesktop("DriveCloud");
+        this.filePort = filePort;
         drive = new DriveConnection();
         drive.checkFolderIsExist();
         drive.initializeChangeMap();
@@ -65,9 +64,10 @@ public class Server extends BaseServer {
         }, 0, 15, TimeUnit.SECONDS);
 
         // ornekler
-        Set<String> changedSet = ChangeTracking.getChangedFiles(directory);
+        // TODO: Fix these
+        /* Set<String> changedSet = ChangeTracking.getChangedFiles(directory);
         Set<String> createdSet = ChangeTracking.getAddedFiles(directory);
-        Set<String> deletedSet = ChangeTracking.getFilesToDelete(directory);
+        Set<String> deletedSet = ChangeTracking.getFilesToDelete(directory);*/
     }
 
     public void startWorking() throws IOException, NoSuchAlgorithmException {
@@ -105,13 +105,13 @@ public class Server extends BaseServer {
     }
 
     public void sendFiles(List<String> files) throws IOException {
-        for(String file: files) {
+        for (String file : files) {
             drive.uploadFile(file);
         }
     }
 
     public void receiveFiles(List<String> files) throws IOException {
-        for(String file: files) {
+        for (String file : files) {
             drive.downloadFile(file);
         }
     }
@@ -136,17 +136,7 @@ public class Server extends BaseServer {
         Socket s = getServerSocket().accept();
         System.out.println("A connection was established with a client on the address of " + s.getRemoteSocketAddress());
 
-        // Get file server thread for this connection
-        FileServerThread fsThread = fileServer.listenAndAccept();
-        Socket fsSocket = fsThread.getSocket();
-
-        if (!fsSocket.getInetAddress().equals(s.getInetAddress())) {
-            // TODO: Solve this issue
-            // TODO: Detect which file server thread is which file server's
-            throw new ConnectionException("Different clients connected to server and file server, error");
-        }
-
-        ServerThread st = new ServerThread(s, fsThread, directory);
+        ServerThread st = new ServerThread(s, fileServer, filePort, directory);
         st.start();
     }
 

@@ -13,6 +13,7 @@ import java.util.Objects;
  * Client handling file transfers
  */
 public class FileClient extends BaseClient implements IFileClient {
+    private String identifier = null;
     private InputStream is;
     private OutputStream os;
 
@@ -20,8 +21,9 @@ public class FileClient extends BaseClient implements IFileClient {
      * @param address IP address of the server, if you are running the server on the same computer as client, put the address as "localhost"
      * @param port    port number of the server
      */
-    public FileClient(String address, int port) {
+    public FileClient(String address, int port, String identifier) {
         super(address, port);
+        this.identifier = identifier;
     }
 
     /**
@@ -39,6 +41,21 @@ public class FileClient extends BaseClient implements IFileClient {
         Socket socket = getSocket();
         is = socket.getInputStream();
         os = socket.getOutputStream();
+        if (identifier != null) {
+            System.out.println("Send identifier " + identifier);
+            PrintWriter pw = new PrintWriter(os);
+            pw.write("" + identifier + "\n");
+            pw.flush();
+        }
+    }
+
+    public String getIdentifier() throws IOException {
+        BufferedReader identifierReader = new BufferedReader(new InputStreamReader(is));
+        System.out.println("Waiting for identifier");
+        String identifier = identifierReader.readLine();
+        this.identifier = identifier;
+        System.out.println("Got identifier " + identifier);
+        return identifier;
     }
 
     /**

@@ -1,10 +1,6 @@
 package com.baitforbyte.networkhw1.shared.file.data;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -135,18 +131,18 @@ public final class FileUtils {
     }
 
     // TODO: write docstring
-    public static Set<String> readLog(String directory, String fileName){
+    public static Set<String> readLog(String directory, String fileName) {
         Set<String> files = new HashSet<>();
-        try (Stream<String> stream = Files.lines(getPath(directory, fileName))){
+        try (Stream<String> stream = Files.lines(getPath(directory, fileName))) {
             files = stream.collect(Collectors.toSet());
-        }catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
         return files;
     }
 
     // TODO: write docstring
-    public static void saveLog(Set<String> files, String directory, String fileName){
+    public static void saveLog(Set<String> files, String directory, String fileName) {
         try (BufferedWriter writer = Files.newBufferedWriter(getPath(directory, fileName))) {
             for (String file : files) {
                 writer.write(file + "\r\n");
@@ -157,7 +153,7 @@ public final class FileUtils {
     }
 
     // TODO: write docstring
-    public static void deleteFile(String directory, String fileName){
+    public static void deleteFile(String directory, String fileName) {
         try {
             Files.delete(getPath(directory, fileName));
         } catch (Exception e) {
