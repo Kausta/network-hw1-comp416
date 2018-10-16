@@ -1,4 +1,4 @@
-package com.baitforbyte.networkhw1.master;
+ package com.baitforbyte.networkhw1.master;
 
 import com.baitforbyte.networkhw1.follower.FileData;
 import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
@@ -80,6 +80,9 @@ public class Server extends BaseServer {
                     System.out.println("Change detected!");
                     System.out.println("Local file \"" + s + "\" is deleted. File will be deleted on cloud!");
                     drive.deleteFile(s);
+                    for(ServerThread thread: threads) {
+                        thread.getDeletedFiles().add(s);
+                    }
                     drive.addChangeLog(s);
                     System.out.println("\"" + s + "\" is deleted from cloud!\n");
                 }
@@ -174,7 +177,9 @@ public class Server extends BaseServer {
 
         ServerThread st = new ServerThread(s, fileServer, filePort, directory);
         st.start();
+        threads.add(st);
     }
 
+    private List<ServerThread> threads = new ArrayList<>();
 }
 
