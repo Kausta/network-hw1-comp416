@@ -201,7 +201,10 @@ public class ConnectionToServer extends BaseClient {
                 .filter(x -> !x.endsWith(".veryspeciallog"))
                 .filter(x -> !removedFiles.contains(x))
                 .collect(Collectors.toList()));
-        sendFilesToServer(filesToSend);
+        sendFilesToServer(filesToSend.stream()
+                .filter(x -> !removedFiles.contains(x))
+                .filter(x -> !filesToDelete.contains(x))
+                .collect(Collectors.toList()));
 
         return localFiles.keySet();
     }
@@ -236,7 +239,7 @@ public class ConnectionToServer extends BaseClient {
     }
 
     // TODO: write docstring
-    private void sendFilesToServer(ArrayList<String> filesToSend) throws IOException, NoSuchAlgorithmException {
+    private void sendFilesToServer(List<String> filesToSend) throws IOException, NoSuchAlgorithmException {
         for (String fileName : filesToSend) {
             String response = "";
             System.out.println("Sending " + fileName);
