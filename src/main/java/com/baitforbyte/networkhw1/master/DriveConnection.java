@@ -69,6 +69,13 @@ public class DriveConnection {
             .build();
     private static final Map<String, String> fileMimeTypeMapDownload = ImmutableMap.<String, String>builder()
             .put("application/vnd.google-apps.document", "application/vnd.oasis.opendocument.text")
+            .put("application/vnd.google-apps.spreadsheet", "application/x-vnd.oasis.opendocument.spreadsheet")
+            .put("application/vnd.google-apps.presentation", "application/vnd.oasis.opendocument.presentation")
+            .build();
+    private static final Map<String, String> fileExtensionMapForGoogleDocs = ImmutableMap.<String, String>builder()
+            .put("application/vnd.google-apps.document", ".docx")
+            .put("application/vnd.google-apps.spreadsheet", ".xlsx")
+            .put("application/vnd.google-apps.presentation", ".pptx")
             .build();
     private static Drive service;
     private static Map<String, String> fileIdMap = new HashMap<String, String>();
@@ -216,14 +223,14 @@ public class DriveConnection {
     }
 
     public void deleteLocalFile(String fileName) {
-      java.io.File file = new java.io.File(getFilePath(fileName));
-      file.delete();
-      System.out.println("Local file " + fileName + " has been deleted.\n");
+        java.io.File file = new java.io.File(getFilePath(fileName));
+        file.delete();
+        System.out.println("Local file " + fileName + " has been deleted.\n");
     }
 
     public void addChangeLog(String fileName) {
-      changeLog.add(fileName);
-    } 
+        changeLog.add(fileName);
+    }
 
     public void detectChanges() throws IOException {
         FileList response = service.files().list()
@@ -243,7 +250,6 @@ public class DriveConnection {
             }
         }
         for (String s : changeMap.keySet()) {
-          if(!changeLog.contains(s)) {
             if (tmpChangeMap.get(s) == null) {
                 System.out.println("Change detected!");
                 System.out.println("File " + s + " has been deleted from Google Drive.");
@@ -252,17 +258,22 @@ public class DriveConnection {
             } else {
                 if (!tmpChangeMap.get(s).equals(changeMap.get(s))) {
                     System.out.println("Change detected!");
-                    System.out.println("File " + s + " has been modified in Google Drive.");
-                    System.out.println("Local file will be updated.");
-                    downloadFile(s);
-                    System.out.println("File " + s + " has been updated at local folder.\n");
+                    System.out.println("File " + s + " has been deleted from Google Drive.");
                     changed = true;
+                    deleteLocalFile(s);
+                } else {
+                    if (!tmpChangeMap.get(s).equals(changeMap.get(s))) {
+                        System.out.println("Change detected!");
+                        System.out.println("File " + s + " has been modified in Google Drive.");
+                        System.out.println("Local file will be updated.");
+                        downloadFile(s);
+                        System.out.println("File " + s + " has been updated at local folder.\n");
+                        changed = true;
+                    }
                 }
-            }            
-          }
+            }    
         }
         for (String s : tmpChangeMap.keySet()) {
-          if(!changeLog.contains(s)) {
             if (changeMap.get(s) == null) {
                 System.out.println("Change detected!");
                 System.out.println("File " + s + " has been added to Google Drive");
@@ -271,22 +282,37 @@ public class DriveConnection {
                 System.out.println("File " + s + " has been downloaded to local folder.\n");
                 changed = true;
             }
-          }
         }
         changeMap.clear();
-        for (String s : tmpChangeMap.keySet()) {
-            changeMap.put(s, tmpChangeMap.get(s));
-        }
         tmpChangeMap.clear();
         changeLog.clear();
     }
 
+    public void updateChangeMap() throws IOException {
+        FileList response = service.files().list()
+                .setPageSize(1000)
+                .setFields("nextPageToken, files(id, name, parents, trashed, modifiedTime)")
+                .execute();
+        List<File> fileList = response.getFiles();
+        for (File file : fileList) {
+            String parentID = file.getId();
+            if (file.getParents() != null && !file.getTrashed()) {
+                for (String p : file.getParents()) {
+                    parentID = p;
+                }
+                if (checkFileInFolder(parentID)) {
+                    changeMap.put(file.getName(), file.getModifiedTime());
+                }
+            }
+        }
+    }
+
     public Boolean isChanged() {
-      return this.changed;
+        return this.changed;
     }
 
     public void setChanged(Boolean b) {
-      this.changed = b;
+        this.changed = b;
     }
 
     public List<File> getFileList() throws IOException {
@@ -371,7 +397,11 @@ public class DriveConnection {
                 service.files().get(fileId)
                         .executeMediaAndDownloadTo(outputStream);
             }
-            FileOutputStream fos = new FileOutputStream(getFilePath(fileName));
+            String filePath = getFilePath(fileName);
+            if (mimeType.contains("google-apps")) {
+                filePath += fileExtensionMapForGoogleDocs.get(mimeType);
+            }
+            FileOutputStream fos = new FileOutputStream(filePath);
             fos.write(outputStream.toByteArray());
             fos.close();
         }
