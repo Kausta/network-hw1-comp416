@@ -243,7 +243,6 @@ public class DriveConnection {
             }
         }
         for (String s : changeMap.keySet()) {
-          if(!changeLog.contains(s)) {
             if (tmpChangeMap.get(s) == null) {
                 System.out.println("Change detected!");
                 System.out.println("File " + s + " has been deleted from Google Drive.");
@@ -258,11 +257,9 @@ public class DriveConnection {
                     System.out.println("File " + s + " has been updated at local folder.\n");
                     changed = true;
                 }
-            }            
-          }
+            }    
         }
         for (String s : tmpChangeMap.keySet()) {
-          if(!changeLog.contains(s)) {
             if (changeMap.get(s) == null) {
                 System.out.println("Change detected!");
                 System.out.println("File " + s + " has been added to Google Drive");
@@ -271,14 +268,29 @@ public class DriveConnection {
                 System.out.println("File " + s + " has been downloaded to local folder.\n");
                 changed = true;
             }
-          }
         }
         changeMap.clear();
-        for (String s : tmpChangeMap.keySet()) {
-            changeMap.put(s, tmpChangeMap.get(s));
-        }
         tmpChangeMap.clear();
         changeLog.clear();
+    }
+
+    public void updateChangeMap() throws IOException {
+        FileList response = service.files().list()
+                .setPageSize(1000)
+                .setFields("nextPageToken, files(id, name, parents, trashed, modifiedTime)")
+                .execute();
+        List<File> fileList = response.getFiles();
+        for (File file : fileList) {
+            String parentID = file.getId();
+            if (file.getParents() != null && !file.getTrashed()) {
+                for (String p : file.getParents()) {
+                    parentID = p;
+                }
+                if (checkFileInFolder(parentID)) {
+                    changeMap.put(file.getName(), file.getModifiedTime());
+                }
+            }
+        }
     }
 
     public Boolean isChanged() {
