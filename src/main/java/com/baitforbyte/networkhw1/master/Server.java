@@ -59,15 +59,19 @@ public class Server extends BaseServer {
             try {
                 // Don't forget to call getPageToken() before scheduler
                 drive.detectChanges();
+                Set<String> changedSet = ChangeTracking.getChangedFiles(directory);
+                Set<String> createdSet = ChangeTracking.getAddedFiles(directory);
+                Set<String> deletedSet = ChangeTracking.getFilesToDelete(directory);
+                System.out.println(changedSet);
+                System.out.println(createdSet);
+                System.out.println(deletedSet); 
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }, 0, 15, TimeUnit.SECONDS);
 
         // ornekler
-        Set<String> changedSet = ChangeTracking.getChangedFiles(directory);
-        Set<String> createdSet = ChangeTracking.getAddedFiles(directory);
-        Set<String> deletedSet = ChangeTracking.getFilesToDelete(directory);
+        
     }
 
     public void startWorking() throws IOException, NoSuchAlgorithmException {
