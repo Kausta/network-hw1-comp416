@@ -88,7 +88,8 @@ public class Server extends BaseServer {
                     drive.addChangeLog(s);
                     System.out.println("\"" + s + "\" is deleted from cloud!\n");
                 }
-                if (!drive.isChanged()) {
+                drive.updateChangeMap();
+                if(!drive.isChanged()) {
                     System.out.println("No change is detected in this cycle!\n");
                     System.out.println("================================");
                 } else {
