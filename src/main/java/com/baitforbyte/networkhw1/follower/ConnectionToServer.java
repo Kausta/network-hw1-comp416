@@ -12,6 +12,7 @@ import java.io.PrintWriter;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -185,14 +186,18 @@ public class ConnectionToServer extends BaseClient {
                 filesToRequest.add(fileName);
             }
         }
-        filesToSend.addAll(localFiles.keySet().stream().filter(x -> !x.endsWith(".veryspeciallog")).collect(Collectors.toList()));
 
         deleteFilesAtServer(filesToDelete);
 
-        requestFilesToDeleteFromServer();
+        List<String> removedFiles =requestFilesToDeleteFromServer();
 
         requestFilesFromServer(filesToRequest);
 
+        filesToSend.addAll(localFiles.keySet()
+                .stream()
+                .filter(x -> !x.endsWith(".veryspeciallog"))
+                .filter(x -> !removedFiles.contains(x))
+                .collect(Collectors.toList()));
         sendFilesToServer(filesToSend);
 
         return localFiles.keySet();
@@ -250,15 +255,18 @@ public class ConnectionToServer extends BaseClient {
     }
 
     // TODO: write docstring
-    public void requestFilesToDeleteFromServer() throws IOException {
+    public List<String> requestFilesToDeleteFromServer() throws IOException {
+        List<String> removedFiles = new ArrayList<>();
         String response = sendForAnswer("REMOVE");
         if (response.equals("SENDING")) {
             response = is.readLine();
             while (!response.equals("DONE")) {
+                removedFiles.add(response);
                 FileUtils.deleteFile(directory, response);
                 response = sendForAnswer("DELETED");
             }
         }
+        return removedFiles;
     }
 
 

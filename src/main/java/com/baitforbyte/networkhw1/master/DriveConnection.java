@@ -125,13 +125,14 @@ public class DriveConnection {
     public void checkFolderIsExist() throws IOException {
         FileList response = service.files().list()
                 .setPageSize(1000)
-                .setFields("nextPageToken, files(id, name, parents, mimeType)")
+                .setFields("nextPageToken, files(id, name, trashed, parents, mimeType)")
                 .execute();
         List<File> fileList = response.getFiles();
         Boolean found = false;
         for (File file : fileList) {
             if (file.getName().equals("DriveCloud")
-                    && file.getMimeType().equals("application/vnd.google-apps.folder")) {
+                    && file.getMimeType().equals("application/vnd.google-apps.folder")
+                    && !file.getTrashed()) {
                 found = true;
                 folderID = file.getId();
                 for (String p : file.getParents()) {
