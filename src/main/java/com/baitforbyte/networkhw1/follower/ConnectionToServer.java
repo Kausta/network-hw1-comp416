@@ -100,6 +100,7 @@ public class ConnectionToServer extends BaseClient {
              */
         os.println(message);
         os.flush();
+        System.out.println("[CLIENT] Sending: " + message);
             /*
             Reads a line from the server via Buffer Reader
              */
@@ -113,6 +114,7 @@ public class ConnectionToServer extends BaseClient {
             counter++;
             response = is.readLine();
         }
+        System.out.println("[CLIENT] Response: " + response);
         return response;
     }
 
@@ -189,7 +191,7 @@ public class ConnectionToServer extends BaseClient {
 
         deleteFilesAtServer(filesToDelete);
 
-        List<String> removedFiles =requestFilesToDeleteFromServer();
+        List<String> removedFiles = requestFilesToDeleteFromServer();
 
         requestFilesFromServer(filesToRequest);
 

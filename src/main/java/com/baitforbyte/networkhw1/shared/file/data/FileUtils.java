@@ -88,13 +88,17 @@ public final class FileUtils {
      */
     public static FileTransmissionModel readFromStream(ObjectInputStream is) throws FileTransmissionException {
         try {
+            System.out.println("Reading from stream");
             Object object = is.readObject();
             if (object == null) {
+                System.out.println("Got null closed");
                 return null;
             }
             if (object instanceof FileTransmissionModel) {
+                System.out.println("Got correct");
                 return (FileTransmissionModel) object;
             }
+            System.out.println("Oh no");
             throw new ClassNotFoundException("Unexpected class: " + object.getClass().getName());
         } catch (ClassNotFoundException ex) {
             throw new FileTransmissionException("Incorrect class found in the stream, expected FileTransmissionModel: " + ex.getMessage(), ex);
