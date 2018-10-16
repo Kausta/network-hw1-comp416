@@ -92,6 +92,7 @@ public final class ChangeTracking {
                 if (!logFile.createNewFile()) {
                     System.out.println("Cannot create log file " + name);
                 }
+                // TODO: Name .change.veryspeciallog for hidden in linux, mark hidden in linux
             }
         }
     }

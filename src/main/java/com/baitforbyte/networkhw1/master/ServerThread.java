@@ -116,7 +116,7 @@ class ServerThread extends Thread {
                         }
                     }
                     sendToClient("DONE");
-                }                
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -162,13 +162,7 @@ class ServerThread extends Thread {
      * @throws NoSuchAlgorithmException When hash function is not found, should not occur with the algorithms we use
      */
     private HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {
-        HashMap<String, FileData> files = new HashMap<>();
-        FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
-
-        for (FileTransmissionModel file : fileModels) {
-            files.put(file.getFilename(), new FileData(file.getHash(), file.getLastModifiedTimestamp()));
-        }
-        return files;
+        return ChangeTracking.getLocalFiles(directory);
     }
 
     // TODO: write docstring

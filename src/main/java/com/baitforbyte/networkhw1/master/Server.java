@@ -26,6 +26,7 @@ import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 
 
 public class Server extends BaseServer {
+    private static final int PERIOD = 45;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final int filePort;
 
@@ -108,10 +109,10 @@ public class Server extends BaseServer {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }, 0, 15, TimeUnit.SECONDS);
+        }, 0, PERIOD, TimeUnit.SECONDS);
 
         // ornekler
-        
+
     }
 
     private void syncLogs() throws NoSuchAlgorithmException, IOException {
