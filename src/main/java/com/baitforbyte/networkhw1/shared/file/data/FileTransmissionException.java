@@ -2,6 +2,9 @@ package com.baitforbyte.networkhw1.shared.file.data;
 
 import java.io.IOException;
 
+/**
+ * Exception type for exceptions occurred while file transmission
+ */
 public class FileTransmissionException extends IOException {
     private static final long serialVersionUID = 1L;
 

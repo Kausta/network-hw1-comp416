@@ -7,6 +7,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
+/**
+ * Model class for sending over the network and receiving, holds the file data
+ */
 public class FileTransmissionModel implements Serializable {
     private static final long serialVersionUID = 2L;
 

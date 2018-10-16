@@ -142,7 +142,7 @@ public final class FileUtils {
     /**
      * Reads the log file
      * @param directory directory of the file
-     * @param filename name of the file
+     * @param fileName name of the file
      * @return a set which contains every line of the log file
      */
     public static Set<String> readLog(String directory, String fileName) {
