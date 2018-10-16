@@ -135,7 +135,7 @@ public final class FileUtils {
      * @param filename name of the file
      * @return the path of the file
      */
-    private static Path getPath(String directory, String filename) {
+    public static Path getPath(String directory, String filename) {
         return FileSystems.getDefault().getPath(directory, filename);
     }
 

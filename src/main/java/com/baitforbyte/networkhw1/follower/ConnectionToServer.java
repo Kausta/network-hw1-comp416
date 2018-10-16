@@ -212,7 +212,7 @@ public class ConnectionToServer extends BaseClient {
                 .filter(x -> !filesToDelete.contains(x))
                 .collect(Collectors.toList()));
 
-        return localFiles.keySet();
+        return ChangeTracking.getLocalFiles(directory).keySet();
     }
 
     /**
@@ -242,11 +242,11 @@ public class ConnectionToServer extends BaseClient {
         for (String fileName : filesToRequest) {
             String response = "";
             FileTransmissionModel f = null;
-            while (!response.equals("CORRECT")) {
+            while (!response.equals("CONSISTENCY_CHECK_PASSED")) {
                 String hash = sendForAnswer("SENDFILE" + fileName);
                 f = client.tryReceiveFile();
                 if (f != null && hash.equals(f.getHash())) {
-                    response = sendForAnswer("CORRECT");
+                    response = sendForAnswer("CONSISTENCY_CHECK_PASSED");
                 }
             }
             client.writeModelToPath(directory, f);
@@ -259,12 +259,12 @@ public class ConnectionToServer extends BaseClient {
      * @throws IOException
      * @throws NoSuchAlgorithmException
      */
-    private void sendFilesToServer(ArrayList<String> filesToSend) throws IOException, NoSuchAlgorithmException {
+    private void sendFilesToServer(List<String> filesToSend) throws IOException, NoSuchAlgorithmException {
         for (String fileName : filesToSend) {
             String response = "";
             System.out.println("Sending " + fileName);
             FileTransmissionModel f = client.getModelFromPath(directory, fileName);
-            while (!response.equals("CORRECT")) {
+            while (!response.equals("CONSISTENCY_CHECK_PASSED")) {
                 response = sendForAnswer("SENDING");
                 if (!response.equals("SEND")) {
                     continue;
@@ -272,7 +272,7 @@ public class ConnectionToServer extends BaseClient {
                 client.sendFile(f);
                 String hash = is.readLine();
                 if (hash.equals(f.getHash())) {
-                    response = sendForAnswer("CORRECT");
+                    response = sendForAnswer("CONSISTENCY_CHECK_PASSED");
                 } else {
                     sendForAnswer("ERROR");
                 }

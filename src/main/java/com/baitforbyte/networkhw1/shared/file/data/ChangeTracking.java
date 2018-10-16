@@ -1,6 +1,7 @@
 package com.baitforbyte.networkhw1.shared.file.data;
 
 import com.baitforbyte.networkhw1.follower.FileData;
+import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
 import com.baitforbyte.networkhw1.shared.util.ApplicationMode;
 
 import java.io.File;
@@ -99,7 +100,7 @@ public final class ChangeTracking {
 
 
     /**
-     * Determines which files are added 
+     * Determines which files are added
      * @param directory directory of the related server element
      * @return the names of the files that are added
      * @throws NoSuchAlgorithmException
@@ -119,8 +120,8 @@ public final class ChangeTracking {
      * @param directory directory of the related server element
      * @throws IOException
      */
-    public static void createLogFiles(String directory) throws IOException {
-        String[] names = new String[]{Constants.CHANGE_FILES_LOG_NAME, Constants.PREV_FILES_LOG_NAME};
+    public static void createLogFiles(String directory, ApplicationMode mode) throws IOException {
+        String[] names = mode == ApplicationMode.MASTER ? Constants.SERVER_FILES : Constants.CLIENT_FILES;
         for (String name : names) {
             File logFile = new File(directory, name);
             if (!logFile.exists()) {
