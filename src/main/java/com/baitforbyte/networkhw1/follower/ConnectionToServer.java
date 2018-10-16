@@ -16,10 +16,7 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-/**
- * Created by Yahya Hassanzadeh on 20/09/2017.
- */
+import java.util.stream.Collectors;
 
 public class ConnectionToServer extends BaseClient {
     private final String GET_HASH_MESSAGE = "HASH";
@@ -166,8 +163,8 @@ public class ConnectionToServer extends BaseClient {
      * @throws FileTransmissionException
      */
     public Set<String> compareHash(HashMap<String, FileData> files) throws NoSuchAlgorithmException, IOException, FileTransmissionException {
-        ArrayList<String> filesToSend = new ArrayList<String>();
-        ArrayList<String> filesToRequest = new ArrayList<String>();
+        ArrayList<String> filesToSend = new ArrayList<>();
+        ArrayList<String> filesToRequest = new ArrayList<>();
         HashMap<String, FileData> localFiles = ChangeTracking.getLocalFiles(directory);
         Set<String> filesToDelete = ChangeTracking.getFilesToDelete(directory);
 
@@ -188,6 +185,7 @@ public class ConnectionToServer extends BaseClient {
                 filesToRequest.add(fileName);
             }
         }
+        filesToSend.addAll(localFiles.keySet().stream().filter(x -> !x.endsWith(".veryspeciallog")).collect(Collectors.toList()));
 
         deleteFilesAtServer(filesToDelete);
 

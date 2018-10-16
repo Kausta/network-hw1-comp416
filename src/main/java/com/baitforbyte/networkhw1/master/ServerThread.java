@@ -3,7 +3,6 @@ package com.baitforbyte.networkhw1.master;
 import com.baitforbyte.networkhw1.follower.FileData;
 import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
 import com.baitforbyte.networkhw1.shared.file.data.ChangeTracking;
-import com.baitforbyte.networkhw1.shared.file.data.Constants;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
@@ -16,7 +15,6 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -116,7 +114,7 @@ class ServerThread extends Thread {
                         }
                     }
                     sendToClient("DONE");
-                }                
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -162,13 +160,7 @@ class ServerThread extends Thread {
      * @throws NoSuchAlgorithmException When hash function is not found, should not occur with the algorithms we use
      */
     private HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {
-        HashMap<String, FileData> files = new HashMap<>();
-        FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
-
-        for (FileTransmissionModel file : fileModels) {
-            files.put(file.getFilename(), new FileData(file.getHash(), file.getLastModifiedTimestamp()));
-        }
-        return files;
+        return ChangeTracking.getLocalFiles(directory);
     }
 
     // TODO: write docstring

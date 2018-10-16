@@ -62,7 +62,7 @@ public final class ChangeTracking {
         Set<String> changedFiles = new HashSet<>();
         for (String file : prevFiles) {
             String[] data = file.split("-");
-            if(locals.containsKey(data[0])){
+            if (locals.containsKey(data[0])) {
                 String localHash = locals.get(data[0]).getHash();
                 String oldHash = data[1];
                 if (!oldHash.equals(localHash)) {
@@ -92,6 +92,7 @@ public final class ChangeTracking {
                 if (!logFile.createNewFile()) {
                     System.out.println("Cannot create log file " + name);
                 }
+                // TODO: Name .change.veryspeciallog for hidden in linux, mark hidden in linux
             }
         }
     }
