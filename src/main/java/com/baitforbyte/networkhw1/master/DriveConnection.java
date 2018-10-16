@@ -69,6 +69,13 @@ public class DriveConnection {
             .build();
     private static final Map<String, String> fileMimeTypeMapDownload = ImmutableMap.<String, String>builder()
             .put("application/vnd.google-apps.document", "application/vnd.oasis.opendocument.text")
+            .put("application/vnd.google-apps.spreadsheet", "application/x-vnd.oasis.opendocument.spreadsheet")
+            .put("application/vnd.google-apps.presentation", "application/vnd.oasis.opendocument.presentation")
+            .build();
+    private static final Map<String, String> fileExtensionMapForGoogleDocs = ImmutableMap.<String, String>builder()
+            .put("application/vnd.google-apps.document", ".docx")
+            .put("application/vnd.google-apps.spreadsheet", ".xlsx")
+            .put("application/vnd.google-apps.presentation", ".pptx")
             .build();
     private static Drive service;
     private static Map<String, String> fileIdMap = new HashMap<String, String>();
@@ -371,7 +378,11 @@ public class DriveConnection {
                 service.files().get(fileId)
                         .executeMediaAndDownloadTo(outputStream);
             }
-            FileOutputStream fos = new FileOutputStream(getFilePath(fileName));
+            String filePath = getFilePath(fileName);
+            if (mimeType.contains("google-apps")) {
+              filePath += fileExtensionMapForGoogleDocs.get(mimeType);
+            }
+            FileOutputStream fos = new FileOutputStream(filePath);
             fos.write(outputStream.toByteArray());
             fos.close();
         }
