@@ -2,6 +2,9 @@ package com.baitforbyte.networkhw1.master;
 
 import com.baitforbyte.networkhw1.follower.FileData;
 import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
+import com.baitforbyte.networkhw1.shared.file.data.Constants;
+import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
+import com.baitforbyte.networkhw1.shared.util.ApplicationMode;
 import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -23,26 +26,22 @@ import com.google.api.services.drive.model.FileList;
 import com.google.common.collect.ImmutableMap;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DriveConnection {
 
-    // TODO: Google Doc'lar için file extensionları çoğalt
-    // TODO: Hash'ler uyuşmuyor
-    // TODO: Update function geliştirilebilir?
-    // TODO: Update function text
-    // FilePath
-
-
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
-    // TODO: Token ve credential path'ini degistirebiliyor muyuz?
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
     private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
-    private static final String APPLICATION_FOLDER_PATH = DirectoryUtils.getDirectoryInDesktop("DriveCloud");
+    private static final String APPLICATION_FOLDER_PATH = DirectoryUtils.getDirectoryInDesktop("DriveCloud", ApplicationMode.MASTER);
+    
     /**
      * Global constant of the scope used by application
      * <p>
@@ -92,6 +91,8 @@ public class DriveConnection {
     /**
      * Class constructor for DriveConnection class
      * It initialize the Drive object called service to operate all functionality of the application
+     * @throws IOException if GoogleNetHttpTransport can't provide a proper NetHttpTransport
+     * @throws GeneralSecurityException if GoogleNetHttpTransport can't provide a proper NetHttpTransport
      */
     public DriveConnection() throws IOException, GeneralSecurityException {
         final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
@@ -101,9 +102,7 @@ public class DriveConnection {
     }
 
     /**
-     * IMPORTANT NOTE: This method is copied from Google Drive API documentation
      * Creates an authorized Credential object.
-     *
      * @param HTTP_TRANSPORT The network HTTP Transport.
      * @return An authorized Credential object.
      * @throws IOException If the credentials.json file cannot be found.
@@ -122,6 +121,11 @@ public class DriveConnection {
         return new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize("user");
     }
 
+    /**
+     * Checks whether DriveCloud folder is exist on Google Drive
+     * If doesn't exist, then create a folder named "DriveCloud"
+     * @throws IOException If service return a null object.
+     */
     public void checkFolderIsExist() throws IOException {
         FileList response = service.files().list()
                 .setPageSize(1000)
@@ -172,38 +176,22 @@ public class DriveConnection {
         System.out.println("\n================================");
     }
 
-    public Boolean checkFileInFolder(String parentID) throws IOException {
-        // System.out.println(parentID + " " + folderID);
+    /**
+     * Check whether the file with the given Parent ID is in DriveCloud folder
+     * @param parentID Parent ID of the file which is getting checked whether it is inside the DriveCloud folder or not
+     * @return A boolean whether the file with the given Parent ID is in DriveCloud folder
+     */
+    public Boolean checkFileInFolder(String parentID) {
         if (parentID.equals(folderID)) {
             return true;
         } else
             return false;
-    /*
-    else if (parentID.equals(rootFolderID)) {
-      return false;
-    }
-    else {
-      String newParentID = rootFolderID;
-      FileList res = service.files().list()
-      .setPageSize(1000)
-      .setFields("nextPageToken, files(id, parents, mimeType)")
-      .execute();
-      List<File> fList = res.getFiles();
-      for(File f: fList) {
-        if (f.getParents() == null)
-          return false;
-        if (f.getId().equals(parentID)
-              && f.getMimeType().equals("application/vnd.google-apps.folder")) {
-          for(String p: f.getParents()) {
-            newParentID = p;
-          }
-          break;
-        }
-      }
-      return checkFileInFolder(newParentID);
-    }*/
     }
 
+    /**
+     * Initializing changeMap at the start of the application to keep track of files on Google Drive
+     * @throws IOException when service returns a null object
+     */
     public void initializeChangeMap() throws IOException {
         FileList response = service.files().list()
                 .setPageSize(1000)
@@ -223,6 +211,10 @@ public class DriveConnection {
         }
     }
 
+    /**
+     * Delete the given file in local
+     * @param fileName
+     */
     public void deleteLocalFile(String fileName) {
         java.io.File file = new java.io.File(getFilePath(fileName));
         file.delete();
@@ -233,7 +225,12 @@ public class DriveConnection {
         changeLog.add(fileName);
     }
 
-    public void detectChanges() throws IOException {
+    /**
+     * 
+     * @throws IOException
+     * @throws GeneralSecurityException
+     */
+    public void detectChanges() throws IOException, GeneralSecurityException {
         FileList response = service.files().list()
                 .setPageSize(1000)
                 .setFields("nextPageToken, files(id, name, parents, trashed, modifiedTime)")
@@ -284,12 +281,21 @@ public class DriveConnection {
                 changed = true;
             }
         }
-        changeMap.clear();
+        String directory = DirectoryUtils.getDirectoryInDesktop(ApplicationConfiguration.getInstance().getFolderName(), ApplicationMode.MASTER);
+        Set<String> files = new HashSet<String>();
+        for (String s: changeMap.keySet()) {
+            DateTime d = changeMap.get(s);
+            files.add(s + "<><>" + d + "\r\n");
+        }
+        FileUtils.saveLog(files, directory, Constants.DRIVE_CHANGE_LOG_NAME);
+
+        updateChangeMap();
         tmpChangeMap.clear();
-        changeLog.clear();
+        changeLog.clear();    
     }
 
-    public void updateChangeMap() throws IOException {
+    public void updateChangeMap() throws IOException, GeneralSecurityException {
+        changeMap.clear();
         FileList response = service.files().list()
                 .setPageSize(1000)
                 .setFields("nextPageToken, files(id, name, parents, trashed, modifiedTime)")
@@ -305,6 +311,18 @@ public class DriveConnection {
                     changeMap.put(file.getName(), file.getModifiedTime());
                 }
             }
+        }
+    }
+
+    public void readChangeMap() throws IOException, GeneralSecurityException {
+        changeMap.clear();
+        String directory = DirectoryUtils.getDirectoryInDesktop(ApplicationConfiguration.getInstance().getFolderName(), ApplicationMode.MASTER);
+        Map<String, DateTime> stream = Files.lines(FileUtils.getPath(directory, Constants.DRIVE_CHANGE_LOG_NAME))
+            .filter(x -> !x.isEmpty())
+            .map(line -> line.split("<><>"))
+            .collect(Collectors.toMap(arr -> arr[0], arr->new DateTime(arr[1])));
+        for(String s: stream.keySet()) {
+            changeMap.put(s, stream.get(s));
         }
     }
 

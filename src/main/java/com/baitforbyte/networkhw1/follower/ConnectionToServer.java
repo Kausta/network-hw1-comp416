@@ -3,6 +3,7 @@ package com.baitforbyte.networkhw1.follower;
 import com.baitforbyte.networkhw1.shared.base.BaseClient;
 import com.baitforbyte.networkhw1.shared.file.data.*;
 import com.baitforbyte.networkhw1.shared.file.follower.FileClient;
+import com.baitforbyte.networkhw1.shared.util.ApplicationMode;
 import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 
 import java.io.BufferedReader;
@@ -71,7 +72,7 @@ public class ConnectionToServer extends BaseClient {
         client.connect();
 
         String localDirectoryName = is.readLine();
-        directory = DirectoryUtils.getDirectoryInDesktop(localDirectoryName);
+        directory = DirectoryUtils.getDirectoryInDesktop(localDirectoryName, ApplicationMode.FOLLOWER);
 
         startWorkingLoop();
     }

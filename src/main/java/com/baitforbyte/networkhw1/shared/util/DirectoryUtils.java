@@ -19,7 +19,7 @@ public final class DirectoryUtils {
         return Paths.get(getHomeDirectory(), "Desktop").toString();
     }
 
-    public static String getDirectoryInDesktop(String directory) {
+    public static String getDirectoryInDesktop(String directory, ApplicationMode mode) {
         Path path = Paths.get(getDesktopDirectory(), directory);
 
         File dir = new File(path.toString());
@@ -29,7 +29,7 @@ public final class DirectoryUtils {
             }
         }
         try {
-            ChangeTracking.createLogFiles(path.toString());
+            ChangeTracking.createLogFiles(path.toString(), mode);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

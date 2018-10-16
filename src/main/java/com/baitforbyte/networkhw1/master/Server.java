@@ -8,6 +8,7 @@ import com.baitforbyte.networkhw1.shared.file.data.Constants;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
+import com.baitforbyte.networkhw1.shared.util.ApplicationMode;
 import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 
 import java.io.IOException;
@@ -21,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 
 public class Server extends BaseServer {
-    private static final int PERIOD = 60;
+    private static final int PERIOD = 15;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final int filePort;
     public int i = 0;
@@ -38,11 +39,12 @@ public class Server extends BaseServer {
     public Server(int port, IFileServer fileServer, int filePort) throws IOException, GeneralSecurityException {
         super(port);
         this.fileServer = fileServer;
-        this.directory = DirectoryUtils.getDirectoryInDesktop(ApplicationConfiguration.getInstance().getFolderName());
+        this.directory = DirectoryUtils.getDirectoryInDesktop(ApplicationConfiguration.getInstance().getFolderName(), ApplicationMode.MASTER);
         this.filePort = filePort;
         drive = new DriveConnection();
         drive.checkFolderIsExist();
-        drive.initializeChangeMap();
+        //drive.initializeChangeMap();
+        drive.readChangeMap();
         // drive.getFileList();
         /*for(File file: drive.getFileList()){
             System.out.println(file);

@@ -130,7 +130,7 @@ public final class FileUtils {
     }
 
     // TODO: write docstring
-    private static Path getPath(String directory, String filename) {
+    public static Path getPath(String directory, String filename) {
         return FileSystems.getDefault().getPath(directory, filename);
     }
 
