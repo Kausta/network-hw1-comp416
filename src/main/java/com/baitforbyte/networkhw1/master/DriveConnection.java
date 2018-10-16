@@ -2,6 +2,9 @@ package com.baitforbyte.networkhw1.master;
 
 import com.baitforbyte.networkhw1.follower.FileData;
 import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
+import com.baitforbyte.networkhw1.shared.file.data.Constants;
+import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
+import com.baitforbyte.networkhw1.shared.util.ApplicationMode;
 import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -23,35 +26,40 @@ import com.google.api.services.drive.model.FileList;
 import com.google.common.collect.ImmutableMap;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DriveConnection {
 
-    // TODO: Google Doc'lar için file extensionları çoğalt
-    // TODO: Hash'ler uyuşmuyor
-    // TODO: Update function geliştirilebilir?
-    // TODO: Update function text
-    // FilePath
-
-
+    /**
+     * It is a constant which is used while creating a Drive object (which provides all connection between GoogleDrive and master)
+     */
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
-    // TODO: Token ve credential path'ini degistirebiliyor muyuz?
+    
+    /**
+     * Path constants for tokens, credentials and application folder (which is DriveCloud folder in Desktop)
+     */
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
     private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
-    private static final String APPLICATION_FOLDER_PATH = DirectoryUtils.getDirectoryInDesktop("DriveCloud");
+    private static final String APPLICATION_FOLDER_PATH = DirectoryUtils.getDirectoryInDesktop("DriveCloud", ApplicationMode.MASTER);
+    
     /**
      * Global constant of the scope used by application
-     * <p>
      * We are using "DRIVE" scope, because it gives the permission access
      * of all of the user's files with the write and delete options.
-     * <p>
      * IMPORTANT NOTE: If scope is modified, previously saved tokens/ folder must be deleted.
      */
     private static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE);
+
+    /**
+     * HashMap for easily accessing when Google Drive wants to MimeType of the file
+     */
     private static final Map<String, String> fileExtensionMap = ImmutableMap.<String, String>builder()
             .put("html", "text/html")
             .put("txt", "text/plain")
@@ -67,31 +75,76 @@ public class DriveConnection {
             .put("pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation")
             .put("json", "application/vnd.google-apps.script+json")
             .build();
+
+    /**
+     * Google Drive uses a very different Mime Type hierarchy on Google Drive's own file types
+     * It provides a Mime type while listing the file and wants a different MimeType while downloading that file
+     * So, we use a HashMap for easily accessing when Google Drive wants that MimeTypes 
+     */
     private static final Map<String, String> fileMimeTypeMapDownload = ImmutableMap.<String, String>builder()
             .put("application/vnd.google-apps.document", "application/vnd.oasis.opendocument.text")
             .put("application/vnd.google-apps.spreadsheet", "application/x-vnd.oasis.opendocument.spreadsheet")
             .put("application/vnd.google-apps.presentation", "application/vnd.oasis.opendocument.presentation")
             .build();
+
+    /**
+     * Google Drive's own file types don't have a file extension, so for Windows users, we need to provide
+     * a file extension while downlaoding those files to local folder. For this reason, we use this
+     * HashMap for easily accessing some file extension-mime type pairs
+     */
     private static final Map<String, String> fileExtensionMapForGoogleDocs = ImmutableMap.<String, String>builder()
             .put("application/vnd.google-apps.document", ".docx")
             .put("application/vnd.google-apps.spreadsheet", ".xlsx")
             .put("application/vnd.google-apps.presentation", ".pptx")
             .build();
+
+    /**
+     * Drive object which basically provides all the connection between Google Drive and application
+     */
     private static Drive service;
+
+    /**
+     * Files' id and Mime type maps container
+     * These are filled while getting list of the files in proper functions
+     */
     private static Map<String, String> fileIdMap = new HashMap<String, String>();
     private static Map<String, String> fileMimeMap = new HashMap<String, String>();
+
+    /**
+     * Two container used while detecting the changes on Google Drive
+     * One of them contains the files on last cycles,
+     * other one contains the files on current cycles on Google Drive
+     * End of the cycles, pairs in tmpChangeMap are transferred to changeMap
+     */
     private static Map<String, DateTime> changeMap = new HashMap<String, DateTime>();
     private static Map<String, DateTime> tmpChangeMap = new HashMap<String, DateTime>();
+
+    /**
+     * Set used for tracking the changes local to Google Drive
+     */
     private static Set<String> changeLog = new HashSet<String>();
+
+    /**
+     * Application name constant which is used while initializing the Drive object 'service'
+     */
     private final String APPLICATION_NAME = "DriveCloud - Bait for Byte";
+
+    /**
+     * Variables used for containing the DriveCloud folder ID and the root folder ID in Google Drive account
+     */
     private String folderID;
     private String rootFolderID;
-    private String pageToken;
+
+    /**
+     * Variable used for detecting whether there was a change on last cycle
+     */
     private Boolean changed = false;
 
     /**
      * Class constructor for DriveConnection class
      * It initialize the Drive object called service to operate all functionality of the application
+     * @throws IOException if GoogleNetHttpTransport can't provide a proper NetHttpTransport
+     * @throws GeneralSecurityException if GoogleNetHttpTransport can't provide a proper NetHttpTransport
      */
     public DriveConnection() throws IOException, GeneralSecurityException {
         final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
@@ -101,9 +154,7 @@ public class DriveConnection {
     }
 
     /**
-     * IMPORTANT NOTE: This method is copied from Google Drive API documentation
      * Creates an authorized Credential object.
-     *
      * @param HTTP_TRANSPORT The network HTTP Transport.
      * @return An authorized Credential object.
      * @throws IOException If the credentials.json file cannot be found.
@@ -122,6 +173,13 @@ public class DriveConnection {
         return new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize("user");
     }
 
+    /**
+     * Checks whether DriveCloud folder is exist on Google Drive
+     * First, it gets the list of file in Google Drive account (folders are considered as files in Google Drive)
+     * Then, necessary filtering is done and check the DriveCloud folder is exists on Google Drive
+     * If doesn't exist, then create a folder named "DriveCloud"
+     * @throws IOException If service return a null object.
+     */
     public void checkFolderIsExist() throws IOException {
         FileList response = service.files().list()
                 .setPageSize(1000)
@@ -172,38 +230,22 @@ public class DriveConnection {
         System.out.println("\n================================");
     }
 
-    public Boolean checkFileInFolder(String parentID) throws IOException {
-        // System.out.println(parentID + " " + folderID);
+    /**
+     * Check whether the file with the given Parent ID is in DriveCloud folder
+     * @param parentID Parent ID of the file which is getting checked whether it is inside the DriveCloud folder or not
+     * @return A boolean whether the file with the given Parent ID is in DriveCloud folder
+     */
+    public Boolean checkFileInFolder(String parentID) {
         if (parentID.equals(folderID)) {
             return true;
         } else
             return false;
-    /*
-    else if (parentID.equals(rootFolderID)) {
-      return false;
-    }
-    else {
-      String newParentID = rootFolderID;
-      FileList res = service.files().list()
-      .setPageSize(1000)
-      .setFields("nextPageToken, files(id, parents, mimeType)")
-      .execute();
-      List<File> fList = res.getFiles();
-      for(File f: fList) {
-        if (f.getParents() == null)
-          return false;
-        if (f.getId().equals(parentID)
-              && f.getMimeType().equals("application/vnd.google-apps.folder")) {
-          for(String p: f.getParents()) {
-            newParentID = p;
-          }
-          break;
-        }
-      }
-      return checkFileInFolder(newParentID);
-    }*/
     }
 
+    /**
+     * Initializing changeMap at the start of the application to keep track of files on Google Drive
+     * @throws IOException when service returns a null object
+     */
     public void initializeChangeMap() throws IOException {
         FileList response = service.files().list()
                 .setPageSize(1000)
@@ -223,16 +265,32 @@ public class DriveConnection {
         }
     }
 
+    /**
+     * Delete the given file in local
+     * @param fileName filename of the file which will be deleted
+     */
     public void deleteLocalFile(String fileName) {
         java.io.File file = new java.io.File(getFilePath(fileName));
         file.delete();
         System.out.println("Local file " + fileName + " has been deleted.\n");
     }
 
+    /**
+     * It is a part of the program to keep track of the changes
+     * Adding given file to changeLog
+     * @param fileName name of the file which will be added to changeLog
+     */
     public void addChangeLog(String fileName) {
         changeLog.add(fileName);
     }
 
+    /**
+     * Detect changes in Google Drive files(add, delete, update) and synchronize them with the local files
+     * First, it takes the current file list and filter them depends on whether they are in DriveCloud folder
+     * Then, it puts the proper files into tmpChangeMap
+     * Finally, it compares changeMap (files at one cycles before) and tmpChangeMap (current files) and syncronize Google Drive with local folder.
+     * @throws IOException if service returns a null object
+     */
     public void detectChanges() throws IOException {
         FileList response = service.files().list()
                 .setPageSize(1000)
@@ -284,12 +342,28 @@ public class DriveConnection {
                 changed = true;
             }
         }
-        changeMap.clear();
+        String directory = DirectoryUtils.getDirectoryInDesktop(ApplicationConfiguration.getInstance().getFolderName(), ApplicationMode.MASTER);
+        Set<String> files = new HashSet<String>();
+        for (String s: changeMap.keySet()) {
+            DateTime d = changeMap.get(s);
+            files.add(s + "<><>" + d + "\r\n");
+        }
+        FileUtils.saveLog(files, directory, Constants.DRIVE_CHANGE_LOG_NAME);
+
+        updateChangeMap();
         tmpChangeMap.clear();
-        changeLog.clear();
+        changeLog.clear();    
     }
 
+    /**
+     * Update changeMap with the data coming from Google Drive API
+     * First, it clears the changeMap and gets the file list from Google Drive.
+     * Then, filter the files depends on whether they are in DriveCloud folder.
+     * Finally, it adds the proper files to changeMap.
+     * @throws IOException if service returns a null object
+     */
     public void updateChangeMap() throws IOException {
+        changeMap.clear();
         FileList response = service.files().list()
                 .setPageSize(1000)
                 .setFields("nextPageToken, files(id, name, parents, trashed, modifiedTime)")
@@ -308,14 +382,46 @@ public class DriveConnection {
         }
     }
 
+    /**
+     * Read the local Google Drive Change Log and update the changeMap
+     * This method is only used at the start to check whether
+     * there was a change while the master is closed.
+     * @throws IOException if there is an error while reading the local change-log file
+     */
+    public void readChangeMap() throws IOException {
+        changeMap.clear();
+        String directory = DirectoryUtils.getDirectoryInDesktop(ApplicationConfiguration.getInstance().getFolderName(), ApplicationMode.MASTER);
+        Map<String, DateTime> stream = Files.lines(FileUtils.getPath(directory, Constants.DRIVE_CHANGE_LOG_NAME))
+            .filter(x -> !x.isEmpty())
+            .map(line -> line.split("<><>"))
+            .collect(Collectors.toMap(arr -> arr[0], arr->new DateTime(arr[1])));
+        for(String s: stream.keySet()) {
+            changeMap.put(s, stream.get(s));
+        }
+    }
+
+    /**
+     * Returns the value of the boolean 'changed'
+     * This method is used for detecting whether any change happens in a cycle.
+     * @return the value of the boolean 'changed'
+     */
     public Boolean isChanged() {
         return this.changed;
     }
 
+    /**
+     * Setter method of the 'changed' boolean
+     * @param b the value which will replace the current value of the variable
+     */
     public void setChanged(Boolean b) {
         this.changed = b;
     }
 
+    /**
+     * Returns the current file list in the DriveCloud folder on Google Drive
+     * @return a list of file in the DriveCloud
+     * @throws IOException if service returns null
+     */
     public List<File> getFileList() throws IOException {
         // setPageSize's default value is 100, max value is 1000
         // Its value must be 1000 in production
@@ -324,11 +430,9 @@ public class DriveConnection {
                 .setFields("nextPageToken, files(id, name, parents, trashed, mimeType, modifiedTime, md5Checksum)")
                 .execute();
         List<File> fileList = response.getFiles();
-        // trash'deki şeyleri de alalım mı buraya
         for (File file : fileList) {
             String parentID = file.getId();
             if (file.getParents() != null && !file.getTrashed()) {
-                // System.out.println(file.getName());
                 for (String p : file.getParents()) {
                     parentID = p;
                 }
@@ -342,34 +446,11 @@ public class DriveConnection {
         return fileList;
     }
 
-    public HashMap<String, FileData> getFileDataMap() throws IOException, NoSuchAlgorithmException {
-        FileList response = service.files().list()
-                .setPageSize(1000)
-                .setFields("nextPageToken, files(id, name, parents, mimeType, modifiedTime, md5Checksum)")
-                .execute();
-        HashMap<String, FileData> fileMap = new HashMap<String, FileData>();
-        // trash'deki şeyleri de alalım mı buraya
-        for (File file : response.getFiles()) {
-            String parentID = file.getId();
-            if (file.getParents() != null) {
-                for (String p : file.getParents()) {
-                    parentID = p;
-                }
-                if (checkFileInFolder(parentID)) {
-                    DateTime tmpDateTime = file.getModifiedTime();
-                    System.out.println("=======");
-                    final MessageDigest md = MessageDigest.getInstance(ApplicationConfiguration.getInstance().getFileHashType());
-                    System.out.println(file.getMd5Checksum());
-                    byte[] b = file.getMd5Checksum().getBytes();
-                    System.out.println(Base64.getEncoder().encodeToString(b));
-                    FileData tmpFile = new FileData(Base64.getEncoder().encodeToString(b), tmpDateTime.getValue());
-                    fileMap.put(file.getName(), tmpFile);
-                }
-            }
-        }
-        return fileMap;
-    }
-
+    /**
+     * Upload the given file to Google Drive
+     * @param fileName name of the file which will be uploaded to Google Drive
+     * @throws IOException if service returns a null object
+     */
     public void uploadFile(final String fileName) throws IOException {
         java.io.File uploadFile = new java.io.File(getFilePath(fileName));
         AbstractInputStreamContent uploadContent = new FileContent(fileExtensionMap.get(getFileExtension(fileName)), uploadFile);
@@ -383,10 +464,17 @@ public class DriveConnection {
         //System.out.println("WebViewLink: " + file.getWebViewLink());
     }
 
+    /**
+     * Download the given file from Google Drive
+     * There are two general type of files in Google Drive: Google's files(Google Doc, Spreadsheet etc.) and others
+     * These two types are downloaded in seperate ways. So, first we needed to check the type of the file.
+     * Then, we were able to download the file in correct way.
+     * @param fileName name of the file which will be downloaded from Google Drive
+     * @throws IOException if service returns a null object
+     */
     public void downloadFile(final String fileName) throws IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         String fileId = getFileId(fileName);
-        // TODO: Download message yazılmalı.
         String mimeType = fileMimeMap.get(fileName);
         if (mimeType.equals("application/vnd.google-apps.folder")) {
             System.out.println("You are trying to download a folder, it is not allowed!");
@@ -408,18 +496,30 @@ public class DriveConnection {
         }
     }
 
+    /**
+     * Update the given file in Google Drive
+     * Because of the fact that Google Drive's update() API is pretty bad,
+     * this method first delete the file from Google Drive,
+     * then upload the file again.
+     * @param fileName name of the file which will be updated on Google Drive
+     * @throws IOException if service returns a null object in used methods
+     */
     public void updateFile(final String fileName) throws IOException {
         deleteFile(fileName);
         uploadFile(fileName);
     }
 
+    /**
+     * Delete the given file from Google Drive
+     * @param fileName name of the file which will be deleted from Google Drive
+     * @throws IOException if service returns a null object
+     */
     public void deleteFile(final String fileName) throws IOException {
         service.files().delete(getFileId(fileName)).execute();
     }
 
     /**
-     * Returns the file path for the file which will be uploaded.
-     *
+     * Returns the file path for the file.
      * @param fileName Name of the file
      * @return File path of the file
      */
@@ -427,6 +527,14 @@ public class DriveConnection {
         return Paths.get(APPLICATION_FOLDER_PATH, fileName).toString();
     }
 
+    /**
+     * Returns the file extension of the given file
+     * While uploading file, we need to provide its Mime type.
+     * For this reason, we keep a hashmap of these mime type - file extension pairs
+     * and get the proper one for this purpose.
+     * @param fileName name of the file whose file extension will be returned
+     * @return file extension of the given file
+     */
     private String getFileExtension(final String fileName) {
         for (int i = fileName.length() - 1; i >= 0; i--) {
             if (fileName.charAt(i) == '.') {
@@ -436,6 +544,13 @@ public class DriveConnection {
         return fileName;
     }
 
+    /**
+     * Returns the Google Drive fileId of the given file
+     * Google Drive requires the fileId of the file in some methods
+     * @param fileName name of the file whose fileID will be returned
+     * @return the GoogleDrive fileID of the given file
+     * @throws IOException if service returns null object in getFileList() function
+     */
     private String getFileId(final String fileName) throws IOException {
         if (fileIdMap.isEmpty())
             getFileList();
