@@ -43,12 +43,13 @@ public final class ChangeTracking {
     /**
      * Determine which files should be deleted
      * @param directory directory of the related server element
+     * @param logFile which log file
      * @return set of the filesnames of the files that are needed to be deleted
      * @throws NoSuchAlgorithmException
      * @throws IOException
      */
-    public static Set<String> getFilesToDelete(String directory) throws NoSuchAlgorithmException, IOException {
-        Set<String> previousFiles = FileUtils.readLog(directory, Constants.PREV_FILES_LOG_NAME);
+    public static Set<String> getFilesToDelete(String directory, String logFile) throws NoSuchAlgorithmException, IOException {
+        Set<String> previousFiles = FileUtils.readLog(directory, logFile);
         for (String file : getLocalFileNames(directory)) {
             previousFiles.remove(file);
         }
@@ -102,12 +103,13 @@ public final class ChangeTracking {
     /**
      * Determines which files are added
      * @param directory directory of the related server element
+     * @param logFile which log file
      * @return the names of the files that are added
      * @throws NoSuchAlgorithmException
      * @throws IOException
      */
-    public static Set<String> getAddedFiles(String directory) throws NoSuchAlgorithmException, IOException {
-        Set<String> previousFiles = FileUtils.readLog(directory, Constants.PREV_FILES_LOG_NAME);
+    public static Set<String> getAddedFiles(String directory, String logFile) throws NoSuchAlgorithmException, IOException {
+        Set<String> previousFiles = FileUtils.readLog(directory, logFile);
         Set<String> files = getLocalFileNames(directory);
         for (String file : previousFiles) {
             files.remove(file);

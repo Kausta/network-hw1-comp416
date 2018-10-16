@@ -180,7 +180,8 @@ public final class FileUtils {
         try {
             Files.delete(getPath(directory, fileName));
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("File already deleted");
+            // e.printStackTrace();
         }
     }
 }
