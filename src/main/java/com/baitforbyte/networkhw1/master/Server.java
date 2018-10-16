@@ -63,15 +63,44 @@ public class Server extends BaseServer {
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 // Don't forget to call getPageToken() before scheduler
-                System.out.println(i++);
-                drive.detectChanges();
+                System.out.println("");
+                drive.getFileList();
                 Set<String> changedSet = ChangeTracking.getChangedFiles(directory);
                 Set<String> createdSet = ChangeTracking.getAddedFiles(directory);
                 Set<String> deletedSet = ChangeTracking.getFilesToDelete(directory);
-                System.out.println(changedSet);
-                System.out.println(createdSet);
-                System.out.println(deletedSet); 
-
+                drive.detectChanges();
+                for(String s: changedSet) {
+                    drive.setChanged(true);
+                    System.out.println("Change detected!");
+                    System.out.println("Local file \"" + s + "\" is changed. File will be updated on cloud!");
+                    drive.updateFile(s);
+                    drive.addChangeLog(s);
+                    System.out.println("\"" + s + "\" is updated on cloud!\n");
+                }
+                for(String s: createdSet) {
+                    drive.setChanged(true);
+                    System.out.println("Change detected!");
+                    System.out.println("Local file \"" + s + "\" is created. File will be added to cloud!");
+                    drive.uploadFile(s);
+                    drive.addChangeLog(s);
+                    System.out.println("\"" + s + "\" is added to cloud!\n");
+                }
+                for(String s: deletedSet) {
+                    drive.setChanged(true);
+                    System.out.println("Change detected!");
+                    System.out.println("Local file \"" + s + "\" is deleted. File will be deleted on cloud!");
+                    drive.deleteFile(s);
+                    drive.addChangeLog(s);
+                    System.out.println("\"" + s + "\" is deleted from cloud!\n");
+                }
+                if(!drive.isChanged()) {
+                    System.out.println("No change is detected in this cycle!\n");
+                    System.out.println("================================");
+                }
+                else {
+                    System.out.println("================================");
+                }
+                drive.setChanged(false);
                 // dont erase
                 syncLogs();
                 // dont erase
