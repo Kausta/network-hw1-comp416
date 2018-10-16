@@ -4,6 +4,10 @@ import com.baitforbyte.networkhw1.follower.FileData;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -122,7 +126,15 @@ public final class ChangeTracking {
                 if (!logFile.createNewFile()) {
                     System.out.println("Cannot create log file " + name);
                 }
-                // TODO: Name .change.veryspeciallog for hidden in linux, mark hidden in linux
+                try {
+                    Path path = Paths.get(directory, name);
+                    Boolean hidden = (Boolean) Files.getAttribute(path, "dos:hidden", LinkOption.NOFOLLOW_LINKS);
+                    if (hidden != null && !hidden) {
+                        Files.setAttribute(path, "dos:hidden", Boolean.TRUE, LinkOption.NOFOLLOW_LINKS);
+                    }
+                } catch (Exception e) {
+                    // Do nothing
+                }
             }
         }
     }
