@@ -1,6 +1,7 @@
 package com.baitforbyte.networkhw1.shared.file.data;
 
 import com.baitforbyte.networkhw1.follower.FileData;
+import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
 import com.baitforbyte.networkhw1.shared.util.ApplicationMode;
 
 import java.io.File;
@@ -39,7 +40,13 @@ public final class ChangeTracking {
         return files;
     }
 
-    // TODO: write docstring
+    /**
+     * Determine which files should be deleted
+     * @param directory directory of the related server element
+     * @return set of the filesnames of the files that are needed to be deleted
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     */
     public static Set<String> getFilesToDelete(String directory) throws NoSuchAlgorithmException, IOException {
         Set<String> previousFiles = FileUtils.readLog(directory, Constants.PREV_FILES_LOG_NAME);
         for (String file : getLocalFileNames(directory)) {
@@ -48,6 +55,13 @@ public final class ChangeTracking {
         return previousFiles;
     }
 
+    /**
+     * Gets the names of the files in the local folder
+     * @param directory directory of the related server element
+     * @return set of the filesnames of the files that are in the directory
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
     public static Set<String> getLocalFileNames(String directory) throws IOException, NoSuchAlgorithmException {
         Set<String> files = new HashSet<String>();
         FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
@@ -60,7 +74,13 @@ public final class ChangeTracking {
         return files;
     }
 
-    // TODO: write docstring
+    /**
+     * Determines which files are changed
+     * @param directory directory of the related server element
+     * @return the filenames that are changed
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     */
     public static Set<String> getChangedFiles(String directory) throws NoSuchAlgorithmException, IOException {
         Set<String> prevFiles = FileUtils.readLog(directory, Constants.CHANGE_FILES_LOG_NAME);
         HashMap<String, FileData> locals = getLocalFiles(directory);
@@ -79,7 +99,13 @@ public final class ChangeTracking {
     }
 
 
-    // TODO: write docstring
+    /**
+     * Determines which files are added
+     * @param directory directory of the related server element
+     * @return the names of the files that are added
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     */
     public static Set<String> getAddedFiles(String directory) throws NoSuchAlgorithmException, IOException {
         Set<String> previousFiles = FileUtils.readLog(directory, Constants.PREV_FILES_LOG_NAME);
         Set<String> files = getLocalFileNames(directory);
@@ -89,6 +115,11 @@ public final class ChangeTracking {
         return files;
     }
 
+    /**
+     * create the log files if they are not preexistant
+     * @param directory directory of the related server element
+     * @throws IOException
+     */
     public static void createLogFiles(String directory, ApplicationMode mode) throws IOException {
         String[] names = mode == ApplicationMode.MASTER ? Constants.SERVER_FILES : Constants.CLIENT_FILES;
         for (String name : names) {

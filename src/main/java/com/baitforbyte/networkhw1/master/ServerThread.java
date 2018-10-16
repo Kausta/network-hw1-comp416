@@ -3,6 +3,7 @@ package com.baitforbyte.networkhw1.master;
 import com.baitforbyte.networkhw1.follower.FileData;
 import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
 import com.baitforbyte.networkhw1.shared.file.data.ChangeTracking;
+import com.baitforbyte.networkhw1.shared.file.data.Constants;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
@@ -77,15 +78,15 @@ class ServerThread extends Thread {
                     FileTransmissionModel f = getFsThread().getModelFromPath(directory, line.substring(8));
                     sendToClient(f.getHash());
                     getFsThread().sendFile(f);
-                } else if (line.startsWith("CORRECT")) {
-                    sendToClient("CORRECT");
+                } else if (line.startsWith("CONSISTENCY_CHECK_PASSED")) {
+                    sendToClient("CONSISTENCY_CHECK_PASSED");
                 } else if (line.startsWith("SENDING")) {
                     sendToClient("SEND");
                     FileTransmissionModel f = getFsThread().tryReceiveFile();
                     sendToClient(f.getHash());
                     String answer = is.readLine();
-                    if (answer.equals("CORRECT")) {
-                        sendToClient("CORRECT");
+                    if (answer.equals("CONSISTENCY_CHECK_PASSED")) {
+                        sendToClient("CONSISTENCY_CHECK_PASSED");
                         getFsThread().writeModelToPath(directory, f);
                     }
                 } else if (line.startsWith("HASH")) {
@@ -115,6 +116,8 @@ class ServerThread extends Thread {
                     }
                     sendToClient("DONE");
                 }
+
+                FileUtils.saveLog(getLocalFiles().keySet(), directory, Constants.PREV_FILES_LOG_NAME);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -163,7 +166,10 @@ class ServerThread extends Thread {
         return ChangeTracking.getLocalFiles(directory);
     }
 
-    // TODO: write docstring
+    /**
+     * The function to send a string to the client
+     * @param s the string to be sent
+     */
     private void sendToClient(String s) {
         System.out.println("Send " + s);
         os.write(s + "\n");
