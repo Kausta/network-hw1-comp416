@@ -75,8 +75,8 @@ class ServerThread extends Thread {
                 System.out.println("Client " + s.getRemoteSocketAddress() + " sent : " + line);
                 if (line.startsWith("SENDFILE")) {
                     FileTransmissionModel f = getFsThread().getModelFromPath(directory, line.substring(8));
-                    getFsThread().sendFile(f);
                     sendToClient(f.getHash());
+                    getFsThread().sendFile(f);
                 } else if (line.startsWith("CORRECT")) {
                     sendToClient("CORRECT");
                 } else if (line.startsWith("SENDING")) {
