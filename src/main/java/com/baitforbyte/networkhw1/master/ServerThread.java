@@ -1,5 +1,13 @@
 package com.baitforbyte.networkhw1.master;
 
+import com.baitforbyte.networkhw1.follower.FileData;
+import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
+import com.baitforbyte.networkhw1.shared.file.data.ChangeTracking;
+import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
+import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
+import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
+import com.baitforbyte.networkhw1.shared.file.master.IFileServerThread;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -7,23 +15,18 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
-
-import com.baitforbyte.networkhw1.follower.FileData;
-import com.baitforbyte.networkhw1.shared.file.data.ChangeTracking;
-import com.baitforbyte.networkhw1.shared.file.data.Constants;
-import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
-import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
-import com.baitforbyte.networkhw1.shared.file.master.IFileServerThread;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class ServerThread extends Thread {
+    private static AtomicInteger localClientNumber = new AtomicInteger(1);
 
-
-    private final IFileServerThread fsThread;
+    private final IFileServer fsServer;
+    private final int filePort;
     protected BufferedReader is;
     protected PrintWriter os;
     protected Socket s;
+    private String clientIdentifier;
     private String line = "";
     private String directory;
 
@@ -32,9 +35,10 @@ class ServerThread extends Thread {
      *
      * @param s input socket to create a thread on
      */
-    public ServerThread(Socket s, IFileServerThread fsThread, String directory) {
+    public ServerThread(Socket s, IFileServer fsServer, int filePort, String directory) {
         this.s = s;
-        this.fsThread = fsThread;
+        this.fsServer = fsServer;
+        this.filePort = filePort;
         this.directory = directory;
     }
 
@@ -46,6 +50,21 @@ class ServerThread extends Thread {
             is = new BufferedReader(new InputStreamReader(s.getInputStream()));
             os = new PrintWriter(s.getOutputStream());
 
+            String connectedLine = is.readLine();
+            if (!connectedLine.startsWith("CONNECTED")) {
+                throw new RuntimeException("Cannot join, incorrect client");
+            }
+            sendToClient("" + filePort);
+            clientIdentifier = s.getInetAddress().getHostAddress() + "@" + s.getPort();
+            sendToClient(clientIdentifier);
+
+            ApplicationConfiguration instance = ApplicationConfiguration.getInstance();
+            String folderName = instance.getFolderName();
+            if (instance.isLocalhostAddress(s)) {
+                int clientId = localClientNumber.getAndIncrement();
+                folderName += clientId;
+            }
+            sendToClient(folderName);
         } catch (IOException e) {
             System.err.println("Server Thread. Run. IO error in server thread");
         }
@@ -55,19 +74,19 @@ class ServerThread extends Thread {
                 line = is.readLine();
                 System.out.println("Client " + s.getRemoteSocketAddress() + " sent : " + line);
                 if (line.startsWith("SENDFILE")) {
-                    FileTransmissionModel f = fsThread.getModelFromPath(directory, line.substring(8));
-                    fsThread.sendFile(f);
+                    FileTransmissionModel f = getFsThread().getModelFromPath(directory, line.substring(8));
+                    getFsThread().sendFile(f);
                     sendToClient(f.getHash());
                 } else if (line.startsWith("CORRECT")) {
                     sendToClient("CORRECT");
                 } else if (line.startsWith("SENDING")) {
                     sendToClient("SEND");
-                    FileTransmissionModel f = fsThread.tryReceiveFile();
+                    FileTransmissionModel f = getFsThread().tryReceiveFile();
                     sendToClient(f.getHash());
                     String answer = is.readLine();
                     if (answer.equals("CORRECT")) {
                         sendToClient("CORRECT");
-                        fsThread.writeModelToPath(directory, f);
+                        getFsThread().writeModelToPath(directory, f);
                     }
                 } else if (line.startsWith("HASH")) {
                     HashMap<String, FileData> files = getLocalFiles();
@@ -89,19 +108,13 @@ class ServerThread extends Thread {
                     sendToClient("SENDING");
                     String response = "";
                     for (String file : filesToDelete) {
-                        while (!response.equals("DELETED")){
+                        while (!response.equals("DELETED")) {
                             sendToClient(file);
-                            response = is.readLine();                            
+                            response = is.readLine();
                         }
-                        
                     }
+                    sendToClient("DONE");
                 }
-                FileUtils.saveLog(ChangeTracking.getLocalFileNames(directory), directory, Constants.PREV_FILES_LOG_NAME);
-                Set<String> localHashes = new HashSet<>();
-                for (String file : ChangeTracking.getLocalFileNames(directory)) {
-                    localHashes.add(file + "-" + getLocalFiles().get(file).getHash());
-                }
-                FileUtils.saveLog(localHashes, directory, Constants.CHANGE_FILES_LOG_NAME);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -127,8 +140,8 @@ class ServerThread extends Thread {
                     s.close();
                     System.err.println("Socket Closed");
                 }
-                if (fsThread != null) {
-                    fsThread.interrupt();
+                if (getFsThread() != null) {
+                    getFsThread().interrupt();
                 }
 
             } catch (IOException ie) {
@@ -147,13 +160,7 @@ class ServerThread extends Thread {
      * @throws NoSuchAlgorithmException When hash function is not found, should not occur with the algorithms we use
      */
     private HashMap<String, FileData> getLocalFiles() throws IOException, NoSuchAlgorithmException {
-        HashMap<String, FileData> files = new HashMap<>();
-        FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
-
-        for (FileTransmissionModel file : fileModels) {
-            files.put(file.getFilename(), new FileData(file.getHash(), file.getLastModifiedTimestamp()));
-        }
-        return files;
+        return ChangeTracking.getLocalFiles(directory);
     }
 
     // TODO: write docstring
@@ -163,7 +170,9 @@ class ServerThread extends Thread {
         os.flush();
     }
 
+    private IFileServerThread getFsThread() {
+        return fsServer.getFSThread(clientIdentifier);
+    }
 
-    
 
 }

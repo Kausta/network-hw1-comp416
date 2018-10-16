@@ -43,7 +43,7 @@ public class EntryPoint {
 
     /**
      * Gets the application mode and runs runMaster or runFollower
-     * 
+     *
      * @throws GeneralSecurityException
      */
     public void run() throws GeneralSecurityException {
@@ -70,7 +70,7 @@ public class EntryPoint {
 
     /**
      * Runs the master application by getting a port
-     * 
+     *
      * @throws GeneralSecurityException
      */
     public void runMaster() throws GeneralSecurityException {
@@ -95,19 +95,16 @@ public class EntryPoint {
     public void runFollower() {
         String ip;
         int port;
-        int filePort;
-        if (args.length > 3) {
+        if (args.length > 2) {
             ip = args[1];
             port = Integer.parseInt(args[2]);
-            filePort = Integer.parseInt(args[3]);
         } else {
             ip = Input.getInstance().getIp();
             port = Input.getInstance().getPort("Port number: ");
-            filePort = Input.getInstance().getPort("File transmission port number: ");
         }
         System.out.println("Connecting to " + ip + ":" + port + "");
 
-        FollowerApplication application = new FollowerApplication(ip, port, filePort);
+        FollowerApplication application = new FollowerApplication(ip, port);
         application.run();
     }
 }

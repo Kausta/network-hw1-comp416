@@ -11,12 +11,17 @@ import java.net.Socket;
  */
 public class FileServerThread extends IFileServerThread {
     private final Socket s;
+    private final FileServer server;
     private final FileClient client;
+    private final String identifier;
 
-    public FileServerThread(Socket s) throws IOException {
+    public FileServerThread(Socket s, FileServer server) throws IOException {
         this.s = s;
+        this.server = server;
         this.client = new FileClient(s);
         client.connect();
+        this.identifier = client.getIdentifier();
+        server.addClient(identifier, this);
     }
 
     public Socket getSocket() {
@@ -28,6 +33,7 @@ public class FileServerThread extends IFileServerThread {
         System.out.println("Closing file client connection");
         try {
             client.disconnect();
+            server.removeClient(identifier);
         } catch (IOException e) {
             e.printStackTrace();
         }
