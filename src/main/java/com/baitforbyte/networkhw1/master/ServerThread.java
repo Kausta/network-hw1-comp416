@@ -16,12 +16,14 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class ServerThread extends Thread {
     private static AtomicInteger localClientNumber = new AtomicInteger(1);
 
+    private final HashSet<String> deletedFiles;
     private final IFileServer fsServer;
     private final int filePort;
     protected BufferedReader is;
@@ -41,6 +43,7 @@ class ServerThread extends Thread {
         this.fsServer = fsServer;
         this.filePort = filePort;
         this.directory = directory;
+        deletedFiles = new HashSet<>();
     }
 
     /**
@@ -105,7 +108,7 @@ class ServerThread extends Thread {
                     FileUtils.deleteFile(directory, fileName);
                     sendToClient("DELETED");
                 } else if (line.startsWith("REMOVE")) {
-                    Set<String> filesToDelete = ChangeTracking.getFilesToDelete(directory);
+                    Set<String> filesToDelete = deletedFiles;
                     sendToClient("SENDING");
                     String response = "";
                     for (String file : filesToDelete) {
@@ -113,6 +116,7 @@ class ServerThread extends Thread {
                             sendToClient(file);
                             response = is.readLine();
                         }
+                        filesToDelete.remove(file);
                         response = "";
                     }
                     sendToClient("DONE");
@@ -180,4 +184,7 @@ class ServerThread extends Thread {
     }
 
 
+    public HashSet<String> getDeletedFiles() {
+        return deletedFiles;
+    }
 }
