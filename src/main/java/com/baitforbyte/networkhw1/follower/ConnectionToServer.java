@@ -176,7 +176,7 @@ public class ConnectionToServer extends BaseClient {
         ArrayList<String> filesToSend = new ArrayList<>();
         ArrayList<String> filesToRequest = new ArrayList<>();
         HashMap<String, FileData> localFiles = ChangeTracking.getLocalFiles(directory);
-        Set<String> filesToDelete = ChangeTracking.getFilesToDelete(directory);
+        Set<String> filesToDelete = ChangeTracking.getFilesToDelete(directory, Constants.PREV_FILES_LOG_NAME);
 
         for (String fileName : files.keySet()) {
             if (localFiles.containsKey(fileName)) {

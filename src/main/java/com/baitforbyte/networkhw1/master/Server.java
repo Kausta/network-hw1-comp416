@@ -56,8 +56,8 @@ public class Server extends BaseServer {
                 System.out.println("");
                 drive.getFileList();
                 Set<String> changedSet = ChangeTracking.getChangedFiles(directory);
-                Set<String> createdSet = ChangeTracking.getAddedFiles(directory);
-                Set<String> deletedSet = ChangeTracking.getFilesToDelete(directory);
+                Set<String> createdSet = ChangeTracking.getAddedFiles(directory, Constants.PREV_DRIVE_LOG_NAME);
+                Set<String> deletedSet = ChangeTracking.getFilesToDelete(directory, Constants.PREV_DRIVE_LOG_NAME);
                 drive.detectChanges();
                 for (String s : changedSet) {
                     drive.setChanged(true);
@@ -105,7 +105,7 @@ public class Server extends BaseServer {
     }
 
     private void syncLogs() throws NoSuchAlgorithmException, IOException {
-        FileUtils.saveLog(ChangeTracking.getLocalFileNames(directory), directory, Constants.PREV_FILES_LOG_NAME);
+        FileUtils.saveLog(ChangeTracking.getLocalFileNames(directory), directory, Constants.PREV_DRIVE_LOG_NAME);
         Set<String> localHashes = new HashSet<>();
         for (String file : ChangeTracking.getLocalFileNames(directory)) {
             localHashes.add(file + "-" + getLocalFiles().get(file).getHash());

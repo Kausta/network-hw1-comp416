@@ -109,6 +109,7 @@ class ServerThread extends Thread {
                     sendToClient("DELETED");
                 } else if (line.startsWith("REMOVE")) {
                     Set<String> filesToDelete = deletedFiles;
+                    filesToDelete.addAll(ChangeTracking.getFilesToDelete(directory, Constants.PREV_FILES_LOG_NAME));
                     sendToClient("SENDING");
                     String response = "";
                     for (String file : filesToDelete) {
@@ -121,6 +122,8 @@ class ServerThread extends Thread {
                     }
                     sendToClient("DONE");
                 }
+
+                FileUtils.saveLog(getLocalFiles().keySet(), directory, Constants.PREV_FILES_LOG_NAME);
             }
         } catch (IOException e) {
             e.printStackTrace();
