@@ -42,7 +42,11 @@ public class ConnectionToServer extends BaseClient {
         super(address, port);
     }
 
-    // TODO: write docstring
+    /**
+     * The tasks that are run in the scheduler
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
     public void tasks() throws IOException, NoSuchAlgorithmException {
         HashMap<String, FileData> files = getHashesFromServer();
         Set<String> localFileNames = compareHash(files);
@@ -77,7 +81,9 @@ public class ConnectionToServer extends BaseClient {
         startWorkingLoop();
     }
 
-    // TODO: write docstring
+    /**
+     * the scheduler which works for the LOOP_TIME final integer
+     */
     private void startWorkingLoop() {
         scheduler.scheduleAtFixedRate(() -> {
             try {
@@ -209,7 +215,11 @@ public class ConnectionToServer extends BaseClient {
         return localFiles.keySet();
     }
 
-    // TODO: write docstring
+    /**
+     * The conversation function with the server for communicating the deleted files in the follower
+     * @param filesToDelete the set of the names of the deleted files
+     * @throws IOException
+     */
     private void deleteFilesAtServer(Set<String> filesToDelete) throws IOException {
         for (String file : filesToDelete) {
             String response = sendForAnswer("DELETE");
@@ -222,7 +232,12 @@ public class ConnectionToServer extends BaseClient {
         }
     }
 
-    // TODO: write docstring
+    /**
+     * The conversation function with the server for communicating the files that exists in the server but not in the follower
+     * @param filesToRequest set of the names of the files for the server to send
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
     private void requestFilesFromServer(ArrayList<String> filesToRequest) throws IOException, NoSuchAlgorithmException {
         for (String fileName : filesToRequest) {
             String response = "";
@@ -238,8 +253,13 @@ public class ConnectionToServer extends BaseClient {
         }
     }
 
-    // TODO: write docstring
-    private void sendFilesToServer(List<String> filesToSend) throws IOException, NoSuchAlgorithmException {
+    /**
+     * The conversation function with the server for communicating the files that exists in the follower but not in the server
+     * @param filesToSend the arraylist of the filenames of the files that are needed to be sent
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
+    private void sendFilesToServer(ArrayList<String> filesToSend) throws IOException, NoSuchAlgorithmException {
         for (String fileName : filesToSend) {
             String response = "";
             System.out.println("Sending " + fileName);
@@ -260,7 +280,11 @@ public class ConnectionToServer extends BaseClient {
         }
     }
 
-    // TODO: write docstring
+    /**
+     * The conversation function with the server for communicating the files that are deleted in the server
+     * @return the list of the removed files
+     * @throws IOException
+     */
     public List<String> requestFilesToDeleteFromServer() throws IOException {
         List<String> removedFiles = new ArrayList<>();
         String response = sendForAnswer("REMOVE");

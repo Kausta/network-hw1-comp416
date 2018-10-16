@@ -163,7 +163,10 @@ class ServerThread extends Thread {
         return ChangeTracking.getLocalFiles(directory);
     }
 
-    // TODO: write docstring
+    /**
+     * The function to send a string to the client
+     * @param s the string to be sent
+     */
     private void sendToClient(String s) {
         System.out.println("Send " + s);
         os.write(s + "\n");

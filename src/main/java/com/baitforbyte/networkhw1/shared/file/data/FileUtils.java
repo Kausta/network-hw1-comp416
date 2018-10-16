@@ -129,12 +129,22 @@ public final class FileUtils {
         }
     }
 
-    // TODO: write docstring
-    public static Path getPath(String directory, String filename) {
+    /**
+     * gets the path of a file
+     * @param directory directory of the file
+     * @param filename name of the file
+     * @return the path of the file
+     */
+    private static Path getPath(String directory, String filename) {
         return FileSystems.getDefault().getPath(directory, filename);
     }
 
-    // TODO: write docstring
+    /**
+     * Reads the log file
+     * @param directory directory of the file
+     * @param filename name of the file
+     * @return a set which contains every line of the log file
+     */
     public static Set<String> readLog(String directory, String fileName) {
         Set<String> files = new HashSet<>();
         try (Stream<String> stream = Files.lines(getPath(directory, fileName))) {
@@ -145,7 +155,12 @@ public final class FileUtils {
         return files;
     }
 
-    // TODO: write docstring
+    /**
+     * write to a log file
+     * @param files the strings to be written to the log line by line
+     * @param directory directory of the file
+     * @param filename name of the file
+     */
     public static void saveLog(Set<String> files, String directory, String fileName) {
         try (BufferedWriter writer = Files.newBufferedWriter(getPath(directory, fileName))) {
             for (String file : files) {
@@ -156,7 +171,11 @@ public final class FileUtils {
         }
     }
 
-    // TODO: write docstring
+    /**
+     * Delete a file
+     * @param directory directory of the file
+     * @param filename name of the file
+     */
     public static void deleteFile(String directory, String fileName) {
         try {
             Files.delete(getPath(directory, fileName));
