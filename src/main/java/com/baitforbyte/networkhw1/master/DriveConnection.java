@@ -223,14 +223,14 @@ public class DriveConnection {
     }
 
     public void deleteLocalFile(String fileName) {
-      java.io.File file = new java.io.File(getFilePath(fileName));
-      file.delete();
-      System.out.println("Local file " + fileName + " has been deleted.\n");
+        java.io.File file = new java.io.File(getFilePath(fileName));
+        file.delete();
+        System.out.println("Local file " + fileName + " has been deleted.\n");
     }
 
     public void addChangeLog(String fileName) {
-      changeLog.add(fileName);
-    } 
+        changeLog.add(fileName);
+    }
 
     public void detectChanges() throws IOException {
         FileList response = service.files().list()
@@ -250,35 +250,35 @@ public class DriveConnection {
             }
         }
         for (String s : changeMap.keySet()) {
-          if(!changeLog.contains(s)) {
-            if (tmpChangeMap.get(s) == null) {
-                System.out.println("Change detected!");
-                System.out.println("File " + s + " has been deleted from Google Drive.");
-                changed = true;
-                deleteLocalFile(s);
-            } else {
-                if (!tmpChangeMap.get(s).equals(changeMap.get(s))) {
+            if (!changeLog.contains(s)) {
+                if (tmpChangeMap.get(s) == null) {
                     System.out.println("Change detected!");
-                    System.out.println("File " + s + " has been modified in Google Drive.");
-                    System.out.println("Local file will be updated.");
-                    downloadFile(s);
-                    System.out.println("File " + s + " has been updated at local folder.\n");
+                    System.out.println("File " + s + " has been deleted from Google Drive.");
                     changed = true;
+                    deleteLocalFile(s);
+                } else {
+                    if (!tmpChangeMap.get(s).equals(changeMap.get(s))) {
+                        System.out.println("Change detected!");
+                        System.out.println("File " + s + " has been modified in Google Drive.");
+                        System.out.println("Local file will be updated.");
+                        downloadFile(s);
+                        System.out.println("File " + s + " has been updated at local folder.\n");
+                        changed = true;
+                    }
                 }
-            }            
-          }
+            }
         }
         for (String s : tmpChangeMap.keySet()) {
-          if(!changeLog.contains(s)) {
-            if (changeMap.get(s) == null) {
-                System.out.println("Change detected!");
-                System.out.println("File " + s + " has been added to Google Drive");
-                System.out.println("It will be downloaded to local folder.");
-                downloadFile(s);
-                System.out.println("File " + s + " has been downloaded to local folder.\n");
-                changed = true;
+            if (!changeLog.contains(s)) {
+                if (changeMap.get(s) == null) {
+                    System.out.println("Change detected!");
+                    System.out.println("File " + s + " has been added to Google Drive");
+                    System.out.println("It will be downloaded to local folder.");
+                    downloadFile(s);
+                    System.out.println("File " + s + " has been downloaded to local folder.\n");
+                    changed = true;
+                }
             }
-          }
         }
         changeMap.clear();
         for (String s : tmpChangeMap.keySet()) {
@@ -289,11 +289,11 @@ public class DriveConnection {
     }
 
     public Boolean isChanged() {
-      return this.changed;
+        return this.changed;
     }
 
     public void setChanged(Boolean b) {
-      this.changed = b;
+        this.changed = b;
     }
 
     public List<File> getFileList() throws IOException {
@@ -380,7 +380,7 @@ public class DriveConnection {
             }
             String filePath = getFilePath(fileName);
             if (mimeType.contains("google-apps")) {
-              filePath += fileExtensionMapForGoogleDocs.get(mimeType);
+                filePath += fileExtensionMapForGoogleDocs.get(mimeType);
             }
             FileOutputStream fos = new FileOutputStream(filePath);
             fos.write(outputStream.toByteArray());

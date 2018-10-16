@@ -18,10 +18,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-/**
- * Created by Yahya Hassanzadeh on 20/09/2017.
- */
-
 public class ConnectionToServer extends BaseClient {
     private final String GET_HASH_MESSAGE = "HASH";
     private final int LOOP_TIME = 30;

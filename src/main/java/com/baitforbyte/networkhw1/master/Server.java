@@ -1,19 +1,5 @@
 package com.baitforbyte.networkhw1.master;
 
-import java.io.IOException;
-import java.net.Socket;
-import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 import com.baitforbyte.networkhw1.follower.FileData;
 import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
 import com.baitforbyte.networkhw1.shared.base.BaseServer;
@@ -24,16 +10,24 @@ import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
 import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 
+import java.io.IOException;
+import java.net.Socket;
+import java.security.GeneralSecurityException;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 
 public class Server extends BaseServer {
     private static final int PERIOD = 45;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final int filePort;
-
+    public int i = 0;
     private IFileServer fileServer;
     private String directory;
     private DriveConnection drive;
-    public  int i = 0;
 
     /**
      * Initiates a server socket on the input port, listens to the line, on receiving an incoming
@@ -70,7 +64,7 @@ public class Server extends BaseServer {
                 Set<String> createdSet = ChangeTracking.getAddedFiles(directory);
                 Set<String> deletedSet = ChangeTracking.getFilesToDelete(directory);
                 drive.detectChanges();
-                for(String s: changedSet) {
+                for (String s : changedSet) {
                     drive.setChanged(true);
                     System.out.println("Change detected!");
                     System.out.println("Local file \"" + s + "\" is changed. File will be updated on cloud!");
@@ -78,7 +72,7 @@ public class Server extends BaseServer {
                     drive.addChangeLog(s);
                     System.out.println("\"" + s + "\" is updated on cloud!\n");
                 }
-                for(String s: createdSet) {
+                for (String s : createdSet) {
                     drive.setChanged(true);
                     System.out.println("Change detected!");
                     System.out.println("Local file \"" + s + "\" is created. File will be added to cloud!");
@@ -86,7 +80,7 @@ public class Server extends BaseServer {
                     drive.addChangeLog(s);
                     System.out.println("\"" + s + "\" is added to cloud!\n");
                 }
-                for(String s: deletedSet) {
+                for (String s : deletedSet) {
                     drive.setChanged(true);
                     System.out.println("Change detected!");
                     System.out.println("Local file \"" + s + "\" is deleted. File will be deleted on cloud!");
@@ -94,11 +88,10 @@ public class Server extends BaseServer {
                     drive.addChangeLog(s);
                     System.out.println("\"" + s + "\" is deleted from cloud!\n");
                 }
-                if(!drive.isChanged()) {
+                if (!drive.isChanged()) {
                     System.out.println("No change is detected in this cycle!\n");
                     System.out.println("================================");
-                }
-                else {
+                } else {
                     System.out.println("================================");
                 }
                 drive.setChanged(false);
