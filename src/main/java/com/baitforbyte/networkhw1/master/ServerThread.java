@@ -116,13 +116,7 @@ class ServerThread extends Thread {
                         }
                     }
                     sendToClient("DONE");
-                }
-                FileUtils.saveLog(ChangeTracking.getLocalFileNames(directory), directory, Constants.PREV_FILES_LOG_NAME);
-                Set<String> localHashes = new HashSet<>();
-                for (String file : ChangeTracking.getLocalFileNames(directory)) {
-                    localHashes.add(file + "-" + getLocalFiles().get(file).getHash());
-                }
-                FileUtils.saveLog(localHashes, directory, Constants.CHANGE_FILES_LOG_NAME);
+                }                
             }
         } catch (IOException e) {
             e.printStackTrace();
