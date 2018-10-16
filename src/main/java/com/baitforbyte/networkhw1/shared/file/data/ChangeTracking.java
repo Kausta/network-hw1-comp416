@@ -62,10 +62,12 @@ public final class ChangeTracking {
         Set<String> changedFiles = new HashSet<>();
         for (String file : prevFiles) {
             String[] data = file.split("-");
-            String localHash = locals.get(data[0]).getHash();
-            String oldHash = data[1];
-            if (!oldHash.equals(localHash)) {
-                changedFiles.add(data[0]);
+            if(locals.containsKey(data[0])){
+                String localHash = locals.get(data[0]).getHash();
+                String oldHash = data[1];
+                if (!oldHash.equals(localHash)) {
+                    changedFiles.add(data[0]);
+                }
             }
         }
         return changedFiles;

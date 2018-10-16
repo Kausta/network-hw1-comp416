@@ -1,13 +1,5 @@
 package com.baitforbyte.networkhw1.master;
 
-import com.baitforbyte.networkhw1.follower.FileData;
-import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
-import com.baitforbyte.networkhw1.shared.base.BaseServer;
-import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
-import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
-import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
-import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
-
 import java.io.IOException;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
@@ -15,10 +7,22 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import com.baitforbyte.networkhw1.follower.FileData;
+import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
+import com.baitforbyte.networkhw1.shared.base.BaseServer;
+import com.baitforbyte.networkhw1.shared.file.data.ChangeTracking;
+import com.baitforbyte.networkhw1.shared.file.data.Constants;
+import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
+import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
+import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
+import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 
 
 public class Server extends BaseServer {
@@ -28,6 +32,7 @@ public class Server extends BaseServer {
     private IFileServer fileServer;
     private String directory;
     private DriveConnection drive;
+    public  int i = 0;
 
     /**
      * Initiates a server socket on the input port, listens to the line, on receiving an incoming
@@ -58,6 +63,7 @@ public class Server extends BaseServer {
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 // Don't forget to call getPageToken() before scheduler
+                System.out.println(i++);
                 drive.detectChanges();
                 Set<String> changedSet = ChangeTracking.getChangedFiles(directory);
                 Set<String> createdSet = ChangeTracking.getAddedFiles(directory);
@@ -65,6 +71,11 @@ public class Server extends BaseServer {
                 System.out.println(changedSet);
                 System.out.println(createdSet);
                 System.out.println(deletedSet); 
+
+                // dont erase
+                syncLogs();
+                // dont erase
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -72,6 +83,15 @@ public class Server extends BaseServer {
 
         // ornekler
         
+    }
+
+    private void syncLogs() throws NoSuchAlgorithmException, IOException {
+        FileUtils.saveLog(ChangeTracking.getLocalFileNames(directory), directory, Constants.PREV_FILES_LOG_NAME);
+        Set<String> localHashes = new HashSet<>();
+        for (String file : ChangeTracking.getLocalFileNames(directory)) {
+            localHashes.add(file + "-" + getLocalFiles().get(file).getHash());
+        }
+        FileUtils.saveLog(localHashes, directory, Constants.CHANGE_FILES_LOG_NAME);
     }
 
     public void startWorking() throws IOException, NoSuchAlgorithmException {
