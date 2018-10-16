@@ -41,7 +41,6 @@ public class ConnectionToServer extends BaseClient {
      */
     public ConnectionToServer(String address, int port) {
         super(address, port);
-        this.directory = DirectoryUtils.getDirectoryInDesktop("CloudDrive1");
     }
 
     // TODO: write docstring
@@ -61,14 +60,20 @@ public class ConnectionToServer extends BaseClient {
         os = new PrintWriter(getSocket().getOutputStream());
 
         String portLine = sendForAnswer("CONNECTED");
+
+        int filePort;
         try {
-            int filePort = Integer.parseInt(portLine);
-            String identifier = is.readLine();
-            client = new FileClient(getServerAddress(), filePort, identifier);
-            client.connect();
+            filePort = Integer.parseInt(portLine);
         } catch (NumberFormatException ex) {
             throw new IOException("Cannot parse port number, incorrect server!\nMessage: " + ex.getMessage(), ex);
         }
+
+        String identifier = is.readLine();
+        client = new FileClient(getServerAddress(), filePort, identifier);
+        client.connect();
+
+        String localDirectoryName = is.readLine();
+        directory = DirectoryUtils.getDirectoryInDesktop(localDirectoryName);
 
         startWorkingLoop();
     }

@@ -1,6 +1,7 @@
 package com.baitforbyte.networkhw1.master;
 
 import com.baitforbyte.networkhw1.follower.FileData;
+import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
 import com.baitforbyte.networkhw1.shared.file.data.ChangeTracking;
 import com.baitforbyte.networkhw1.shared.file.data.Constants;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
@@ -17,8 +18,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class ServerThread extends Thread {
+    private static AtomicInteger localClientNumber = new AtomicInteger(1);
+
     private final IFileServer fsServer;
     private final int filePort;
     protected BufferedReader is;
@@ -55,6 +59,14 @@ class ServerThread extends Thread {
             sendToClient("" + filePort);
             clientIdentifier = s.getInetAddress().getHostAddress() + "@" + s.getPort();
             sendToClient(clientIdentifier);
+
+            ApplicationConfiguration instance = ApplicationConfiguration.getInstance();
+            String folderName = instance.getFolderName();
+            if (instance.isLocalhostAddress(s)) {
+                int clientId = localClientNumber.getAndIncrement();
+                folderName += clientId;
+            }
+            sendToClient(folderName);
         } catch (IOException e) {
             System.err.println("Server Thread. Run. IO error in server thread");
         }

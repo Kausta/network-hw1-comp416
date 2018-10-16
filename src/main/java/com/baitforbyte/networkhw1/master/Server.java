@@ -1,6 +1,7 @@
 package com.baitforbyte.networkhw1.master;
 
 import com.baitforbyte.networkhw1.follower.FileData;
+import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
 import com.baitforbyte.networkhw1.shared.base.BaseServer;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
@@ -37,7 +38,7 @@ public class Server extends BaseServer {
     public Server(int port, IFileServer fileServer, int filePort) throws IOException, GeneralSecurityException {
         super(port);
         this.fileServer = fileServer;
-        this.directory = DirectoryUtils.getDirectoryInDesktop("DriveCloud");
+        this.directory = DirectoryUtils.getDirectoryInDesktop(ApplicationConfiguration.getInstance().getFolderName());
         this.filePort = filePort;
         drive = new DriveConnection();
         drive.checkFolderIsExist();
