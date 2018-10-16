@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 
 public class Server extends BaseServer {
-    private static final int PERIOD = 45;
+    private static final int PERIOD = 60;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final int filePort;
     public int i = 0;
