@@ -1,4 +1,4 @@
-package com.baitforbyte.networkhw1.master;
+ package com.baitforbyte.networkhw1.master;
 
 import com.baitforbyte.networkhw1.follower.FileData;
 import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
@@ -8,6 +8,7 @@ import com.baitforbyte.networkhw1.shared.file.data.Constants;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
+import com.baitforbyte.networkhw1.shared.util.ApplicationMode;
 import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 
 import java.io.IOException;
@@ -21,7 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 
 public class Server extends BaseServer {
-    private static final int PERIOD = 45;
+    private static final int PERIOD = 15;
+    private final HashSet<String> toDelete = new HashSet<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final int filePort;
     public int i = 0;
@@ -31,39 +33,33 @@ public class Server extends BaseServer {
 
     /**
      * Initiates a server socket on the input port, listens to the line, on receiving an incoming
-     * connection creates and starts a ServerThread on the client
-     *
+     * connection creates and starts a ServerThread on the client. Also it is responsible for synchronizing the master side.
+     * First, it initialize the Drive object, check the DriveCloud folder is exist and read the Google Drive Change Log from
+     * local folder to detect changes on Google Drive while server is closed. After that, it looks for changes on master side in a scheduler
+     * To do this, first look for the changes on Drive with calling the function 'detectChanges()' and synchronize the necessary files.
+     * Then, it looks the changes on local folder and synchronize them with the Google Drive.
      * @param port Server port
+     * @param fileServer file server object
+     * @param filePort File port
+     * @throws IOException if drive object returns null in some of the methods
+     * @throws GeneralSecurityException
      */
     public Server(int port, IFileServer fileServer, int filePort) throws IOException, GeneralSecurityException {
         super(port);
         this.fileServer = fileServer;
-        this.directory = DirectoryUtils.getDirectoryInDesktop(ApplicationConfiguration.getInstance().getFolderName());
+        this.directory = DirectoryUtils.getDirectoryInDesktop(ApplicationConfiguration.getInstance().getFolderName(), ApplicationMode.MASTER);
         this.filePort = filePort;
         drive = new DriveConnection();
         drive.checkFolderIsExist();
-        drive.initializeChangeMap();
-        // drive.getFileList();
-        /*for(File file: drive.getFileList()){
-            System.out.println(file);
-        }*/
-        /*HashMap<String, FileData> tmpFileDataMap = drive.getFileDataMap();
-        for(String e: tmpFileDataMap.keySet()) {
-            FileData tmpFileData = tmpFileDataMap.get(e);
-            System.out.println(e);
-            System.out.println(tmpFileData.getHash());
-        }*/
-        //drive.deleteFile("perfection.txt");
-        // drive.updateFile("perfection.txt");
+        drive.readChangeMap();
         scheduler.scheduleAtFixedRate(() -> {
             try {
-                // Don't forget to call getPageToken() before scheduler
                 System.out.println("");
                 drive.getFileList();
                 Set<String> changedSet = ChangeTracking.getChangedFiles(directory);
-                Set<String> createdSet = ChangeTracking.getAddedFiles(directory);
-                Set<String> deletedSet = ChangeTracking.getFilesToDelete(directory);
-                drive.detectChanges();
+                Set<String> createdSet = ChangeTracking.getAddedFiles(directory, Constants.PREV_DRIVE_LOG_NAME);
+                Set<String> deletedSet = toDelete;
+                toDelete.addAll(ChangeTracking.getFilesToDelete(directory, Constants.PREV_DRIVE_LOG_NAME));
                 for (String s : changedSet) {
                     drive.setChanged(true);
                     System.out.println("Change detected!");
@@ -80,14 +76,21 @@ public class Server extends BaseServer {
                     drive.addChangeLog(s);
                     System.out.println("\"" + s + "\" is added to cloud!\n");
                 }
-                for (String s : deletedSet) {
+                Set<String> deletedSetCopy = new HashSet<>(deletedSet);
+                for (String s : deletedSetCopy) {
                     drive.setChanged(true);
                     System.out.println("Change detected!");
                     System.out.println("Local file \"" + s + "\" is deleted. File will be deleted on cloud!");
                     drive.deleteFile(s);
+                    deletedSet.remove(s);
+                    for(ServerThread thread: threads) {
+                        thread.getDeletedFiles().add(s);
+                    }
                     drive.addChangeLog(s);
                     System.out.println("\"" + s + "\" is deleted from cloud!\n");
+
                 }
+                drive.detectChanges();
                 drive.updateChangeMap();
                 if(!drive.isChanged()) {
                     System.out.println("No change is detected in this cycle!\n");
@@ -104,22 +107,15 @@ public class Server extends BaseServer {
                 e.printStackTrace();
             }
         }, 0, PERIOD, TimeUnit.SECONDS);
-
-        // ornekler
-
     }
 
     private void syncLogs() throws NoSuchAlgorithmException, IOException {
-        FileUtils.saveLog(ChangeTracking.getLocalFileNames(directory), directory, Constants.PREV_FILES_LOG_NAME);
+        FileUtils.saveLog(ChangeTracking.getLocalFileNames(directory), directory, Constants.PREV_DRIVE_LOG_NAME);
         Set<String> localHashes = new HashSet<>();
         for (String file : ChangeTracking.getLocalFileNames(directory)) {
             localHashes.add(file + "-" + getLocalFiles().get(file).getHash());
         }
         FileUtils.saveLog(localHashes, directory, Constants.CHANGE_FILES_LOG_NAME);
-    }
-
-    public void startWorking() throws IOException, NoSuchAlgorithmException {
-        compareHash(drive.getFileDataMap());
     }
 
     public void compareHash(HashMap<String, FileData> files) throws IOException, NoSuchAlgorithmException {
@@ -184,9 +180,15 @@ public class Server extends BaseServer {
         Socket s = getServerSocket().accept();
         System.out.println("A connection was established with a client on the address of " + s.getRemoteSocketAddress());
 
-        ServerThread st = new ServerThread(s, fileServer, filePort, directory);
+        ServerThread st = new ServerThread(this, s, fileServer, filePort, directory);
         st.start();
+        threads.add(st);
     }
 
+    private List<ServerThread> threads = new ArrayList<>();
+
+    public HashSet<String> getToDelete() {
+        return toDelete;
+    }
 }
 

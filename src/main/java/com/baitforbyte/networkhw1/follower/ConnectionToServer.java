@@ -3,6 +3,7 @@ package com.baitforbyte.networkhw1.follower;
 import com.baitforbyte.networkhw1.shared.base.BaseClient;
 import com.baitforbyte.networkhw1.shared.file.data.*;
 import com.baitforbyte.networkhw1.shared.file.follower.FileClient;
+import com.baitforbyte.networkhw1.shared.util.ApplicationMode;
 import com.baitforbyte.networkhw1.shared.util.DirectoryUtils;
 
 import java.io.BufferedReader;
@@ -12,6 +13,7 @@ import java.io.PrintWriter;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -40,7 +42,12 @@ public class ConnectionToServer extends BaseClient {
         super(address, port);
     }
 
-    // TODO: write docstring
+    /**
+     * The tasks that are run in the scheduler
+     *
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
     public void tasks() throws IOException, NoSuchAlgorithmException {
         HashMap<String, FileData> files = getHashesFromServer();
         Set<String> localFileNames = compareHash(files);
@@ -70,12 +77,14 @@ public class ConnectionToServer extends BaseClient {
         client.connect();
 
         String localDirectoryName = is.readLine();
-        directory = DirectoryUtils.getDirectoryInDesktop(localDirectoryName);
+        directory = DirectoryUtils.getDirectoryInDesktop(localDirectoryName, ApplicationMode.FOLLOWER);
 
         startWorkingLoop();
     }
 
-    // TODO: write docstring
+    /**
+     * the scheduler which works for the LOOP_TIME final integer
+     */
     private void startWorkingLoop() {
         scheduler.scheduleAtFixedRate(() -> {
             try {
@@ -99,6 +108,7 @@ public class ConnectionToServer extends BaseClient {
              */
         os.println(message);
         os.flush();
+        System.out.println("[CLIENT] Sending: " + message);
             /*
             Reads a line from the server via Buffer Reader
              */
@@ -112,6 +122,7 @@ public class ConnectionToServer extends BaseClient {
             counter++;
             response = is.readLine();
         }
+        System.out.println("[CLIENT] Response: " + response);
         return response;
     }
 
@@ -166,7 +177,7 @@ public class ConnectionToServer extends BaseClient {
         ArrayList<String> filesToSend = new ArrayList<>();
         ArrayList<String> filesToRequest = new ArrayList<>();
         HashMap<String, FileData> localFiles = ChangeTracking.getLocalFiles(directory);
-        Set<String> filesToDelete = ChangeTracking.getFilesToDelete(directory);
+        Set<String> filesToDelete = ChangeTracking.getFilesToDelete(directory, Constants.PREV_FILES_LOG_NAME);
 
         for (String fileName : files.keySet()) {
             if (localFiles.containsKey(fileName)) {
@@ -185,20 +196,35 @@ public class ConnectionToServer extends BaseClient {
                 filesToRequest.add(fileName);
             }
         }
-        filesToSend.addAll(localFiles.keySet().stream().filter(x -> !x.endsWith(".veryspeciallog")).collect(Collectors.toList()));
 
         deleteFilesAtServer(filesToDelete);
 
-        requestFilesToDeleteFromServer();
+        List<String> removedFiles = requestFilesToDeleteFromServer();
 
-        requestFilesFromServer(filesToRequest);
+        requestFilesFromServer(filesToRequest.stream()
+                .filter(x -> !removedFiles.contains(x))
+                .filter(x -> !filesToDelete.contains(x))
+                .collect(Collectors.toList()));
 
-        sendFilesToServer(filesToSend);
+        filesToSend.addAll(localFiles.keySet()
+                .stream()
+                .filter(x -> !x.endsWith(".veryspeciallog"))
+                .filter(x -> !removedFiles.contains(x))
+                .collect(Collectors.toList()));
+        sendFilesToServer(filesToSend.stream()
+                .filter(x -> !removedFiles.contains(x))
+                .filter(x -> !filesToDelete.contains(x))
+                .collect(Collectors.toList()));
 
-        return localFiles.keySet();
+        return ChangeTracking.getLocalFiles(directory).keySet();
     }
 
-    // TODO: write docstring
+    /**
+     * The conversation function with the server for communicating the deleted files in the follower
+     *
+     * @param filesToDelete the set of the names of the deleted files
+     * @throws IOException
+     */
     private void deleteFilesAtServer(Set<String> filesToDelete) throws IOException {
         for (String file : filesToDelete) {
             String response = sendForAnswer("DELETE");
@@ -211,29 +237,41 @@ public class ConnectionToServer extends BaseClient {
         }
     }
 
-    // TODO: write docstring
-    private void requestFilesFromServer(ArrayList<String> filesToRequest) throws IOException, NoSuchAlgorithmException {
+    /**
+     * The conversation function with the server for communicating the files that exists in the server but not in the follower
+     *
+     * @param filesToRequest set of the names of the files for the server to send
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
+    private void requestFilesFromServer(List<String> filesToRequest) throws IOException, NoSuchAlgorithmException {
         for (String fileName : filesToRequest) {
             String response = "";
             FileTransmissionModel f = null;
-            while (!response.equals("CORRECT")) {
+            while (!response.equals("CONSISTENCY_CHECK_PASSED")) {
                 String hash = sendForAnswer("SENDFILE" + fileName);
                 f = client.tryReceiveFile();
                 if (f != null && hash.equals(f.getHash())) {
-                    response = sendForAnswer("CORRECT");
+                    response = sendForAnswer("CONSISTENCY_CHECK_PASSED");
                 }
             }
             client.writeModelToPath(directory, f);
         }
     }
 
-    // TODO: write docstring
-    private void sendFilesToServer(ArrayList<String> filesToSend) throws IOException, NoSuchAlgorithmException {
+    /**
+     * The conversation function with the server for communicating the files that exists in the follower but not in the server
+     *
+     * @param filesToSend the arraylist of the filenames of the files that are needed to be sent
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
+    private void sendFilesToServer(List<String> filesToSend) throws IOException, NoSuchAlgorithmException {
         for (String fileName : filesToSend) {
             String response = "";
             System.out.println("Sending " + fileName);
             FileTransmissionModel f = client.getModelFromPath(directory, fileName);
-            while (!response.equals("CORRECT")) {
+            while (!response.equals("CONSISTENCY_CHECK_PASSED")) {
                 response = sendForAnswer("SENDING");
                 if (!response.equals("SEND")) {
                     continue;
@@ -241,7 +279,7 @@ public class ConnectionToServer extends BaseClient {
                 client.sendFile(f);
                 String hash = is.readLine();
                 if (hash.equals(f.getHash())) {
-                    response = sendForAnswer("CORRECT");
+                    response = sendForAnswer("CONSISTENCY_CHECK_PASSED");
                 } else {
                     sendForAnswer("ERROR");
                 }
@@ -249,16 +287,25 @@ public class ConnectionToServer extends BaseClient {
         }
     }
 
-    // TODO: write docstring
-    public void requestFilesToDeleteFromServer() throws IOException {
+    /**
+     * The conversation function with the server for communicating the files that are deleted in the server
+     *
+     * @return the list of the removed files
+     * @throws IOException
+     */
+    public List<String> requestFilesToDeleteFromServer() throws IOException {
+        List<String> removedFiles = new ArrayList<>();
         String response = sendForAnswer("REMOVE");
         if (response.equals("SENDING")) {
             response = is.readLine();
+            System.out.println("[CLIENT] Response: " + response);
             while (!response.equals("DONE")) {
+                removedFiles.add(response);
                 FileUtils.deleteFile(directory, response);
                 response = sendForAnswer("DELETED");
             }
         }
+        return removedFiles;
     }
 
 
