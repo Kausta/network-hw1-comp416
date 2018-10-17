@@ -3,6 +3,7 @@ package com.baitforbyte.networkhw1.master;
 import com.baitforbyte.networkhw1.follower.FileData;
 import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
 import com.baitforbyte.networkhw1.shared.file.data.ChangeTracking;
+import com.baitforbyte.networkhw1.shared.file.data.Constants;
 import com.baitforbyte.networkhw1.shared.file.data.FileTransmissionModel;
 import com.baitforbyte.networkhw1.shared.file.data.FileUtils;
 import com.baitforbyte.networkhw1.shared.file.master.IFileServer;
@@ -15,14 +16,17 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class ServerThread extends Thread {
     private static AtomicInteger localClientNumber = new AtomicInteger(1);
 
+    private final HashSet<String> deletedFiles;
     private final IFileServer fsServer;
     private final int filePort;
+    private final Server server;
     protected BufferedReader is;
     protected PrintWriter os;
     protected Socket s;
@@ -35,11 +39,13 @@ class ServerThread extends Thread {
      *
      * @param s input socket to create a thread on
      */
-    public ServerThread(Socket s, IFileServer fsServer, int filePort, String directory) {
+    public ServerThread(Server server, Socket s, IFileServer fsServer, int filePort, String directory) {
+        this.server = server;
         this.s = s;
         this.fsServer = fsServer;
         this.filePort = filePort;
         this.directory = directory;
+        deletedFiles = new HashSet<>();
     }
 
     /**
@@ -75,17 +81,17 @@ class ServerThread extends Thread {
                 System.out.println("Client " + s.getRemoteSocketAddress() + " sent : " + line);
                 if (line.startsWith("SENDFILE")) {
                     FileTransmissionModel f = getFsThread().getModelFromPath(directory, line.substring(8));
-                    getFsThread().sendFile(f);
                     sendToClient(f.getHash());
-                } else if (line.startsWith("CORRECT")) {
-                    sendToClient("CORRECT");
+                    getFsThread().sendFile(f);
+                } else if (line.startsWith("CONSISTENCY_CHECK_PASSED")) {
+                    sendToClient("CONSISTENCY_CHECK_PASSED");
                 } else if (line.startsWith("SENDING")) {
                     sendToClient("SEND");
                     FileTransmissionModel f = getFsThread().tryReceiveFile();
                     sendToClient(f.getHash());
                     String answer = is.readLine();
-                    if (answer.equals("CORRECT")) {
-                        sendToClient("CORRECT");
+                    if (answer.equals("CONSISTENCY_CHECK_PASSED")) {
+                        sendToClient("CONSISTENCY_CHECK_PASSED");
                         getFsThread().writeModelToPath(directory, f);
                     }
                 } else if (line.startsWith("HASH")) {
@@ -102,19 +108,26 @@ class ServerThread extends Thread {
                     sendToClient("SEND");
                     String fileName = is.readLine();
                     FileUtils.deleteFile(directory, fileName);
+                    server.getToDelete().add(fileName);
                     sendToClient("DELETED");
                 } else if (line.startsWith("REMOVE")) {
-                    Set<String> filesToDelete = ChangeTracking.getFilesToDelete(directory);
+                    Set<String> filesToDelete = deletedFiles;
+                    filesToDelete.addAll(ChangeTracking.getFilesToDelete(directory, Constants.PREV_FILES_LOG_NAME));
+                    Set<String> copy = new HashSet<>(filesToDelete);
                     sendToClient("SENDING");
                     String response = "";
-                    for (String file : filesToDelete) {
+                    for (String file : copy) {
                         while (!response.equals("DELETED")) {
                             sendToClient(file);
                             response = is.readLine();
                         }
+                        filesToDelete.remove(file);
+                        response = "";
                     }
                     sendToClient("DONE");
                 }
+
+                FileUtils.saveLog(getLocalFiles().keySet(), directory, Constants.PREV_FILES_LOG_NAME);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -163,7 +176,11 @@ class ServerThread extends Thread {
         return ChangeTracking.getLocalFiles(directory);
     }
 
-    // TODO: write docstring
+    /**
+     * The function to send a string to the client
+     *
+     * @param s the string to be sent
+     */
     private void sendToClient(String s) {
         System.out.println("Send " + s);
         os.write(s + "\n");
@@ -175,4 +192,7 @@ class ServerThread extends Thread {
     }
 
 
+    public HashSet<String> getDeletedFiles() {
+        return deletedFiles;
+    }
 }

@@ -1,9 +1,14 @@
 package com.baitforbyte.networkhw1.shared.file.data;
 
 import com.baitforbyte.networkhw1.follower.FileData;
+import com.baitforbyte.networkhw1.shared.util.ApplicationMode;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,15 +39,31 @@ public final class ChangeTracking {
         return files;
     }
 
-    // TODO: write docstring
-    public static Set<String> getFilesToDelete(String directory) throws NoSuchAlgorithmException, IOException {
-        Set<String> previousFiles = FileUtils.readLog(directory, Constants.PREV_FILES_LOG_NAME);
+    /**
+     * Determine which files should be deleted
+     *
+     * @param directory directory of the related server element
+     * @param logFile   which log file
+     * @return set of the filesnames of the files that are needed to be deleted
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     */
+    public static Set<String> getFilesToDelete(String directory, String logFile) throws NoSuchAlgorithmException, IOException {
+        Set<String> previousFiles = FileUtils.readLog(directory, logFile);
         for (String file : getLocalFileNames(directory)) {
             previousFiles.remove(file);
         }
         return previousFiles;
     }
 
+    /**
+     * Gets the names of the files in the local folder
+     *
+     * @param directory directory of the related server element
+     * @return set of the filesnames of the files that are in the directory
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
     public static Set<String> getLocalFileNames(String directory) throws IOException, NoSuchAlgorithmException {
         Set<String> files = new HashSet<String>();
         FileTransmissionModel[] fileModels = FileUtils.getAllFilesInDirectory(directory);
@@ -55,7 +76,14 @@ public final class ChangeTracking {
         return files;
     }
 
-    // TODO: write docstring
+    /**
+     * Determines which files are changed
+     *
+     * @param directory directory of the related server element
+     * @return the filenames that are changed
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     */
     public static Set<String> getChangedFiles(String directory) throws NoSuchAlgorithmException, IOException {
         Set<String> prevFiles = FileUtils.readLog(directory, Constants.CHANGE_FILES_LOG_NAME);
         HashMap<String, FileData> locals = getLocalFiles(directory);
@@ -74,9 +102,17 @@ public final class ChangeTracking {
     }
 
 
-    // TODO: write docstring
-    public static Set<String> getAddedFiles(String directory) throws NoSuchAlgorithmException, IOException {
-        Set<String> previousFiles = FileUtils.readLog(directory, Constants.PREV_FILES_LOG_NAME);
+    /**
+     * Determines which files are added
+     *
+     * @param directory directory of the related server element
+     * @param logFile   which log file
+     * @return the names of the files that are added
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     */
+    public static Set<String> getAddedFiles(String directory, String logFile) throws NoSuchAlgorithmException, IOException {
+        Set<String> previousFiles = FileUtils.readLog(directory, logFile);
         Set<String> files = getLocalFileNames(directory);
         for (String file : previousFiles) {
             files.remove(file);
@@ -84,15 +120,29 @@ public final class ChangeTracking {
         return files;
     }
 
-    public static void createLogFiles(String directory) throws IOException {
-        String[] names = new String[]{Constants.CHANGE_FILES_LOG_NAME, Constants.PREV_FILES_LOG_NAME};
+    /**
+     * create the log files if they are not preexistant
+     *
+     * @param directory directory of the related server element
+     * @throws IOException
+     */
+    public static void createLogFiles(String directory, ApplicationMode mode) throws IOException {
+        String[] names = mode == ApplicationMode.MASTER ? Constants.SERVER_FILES : Constants.CLIENT_FILES;
         for (String name : names) {
             File logFile = new File(directory, name);
             if (!logFile.exists()) {
                 if (!logFile.createNewFile()) {
                     System.out.println("Cannot create log file " + name);
                 }
-                // TODO: Name .change.veryspeciallog for hidden in linux, mark hidden in linux
+                try {
+                    Path path = Paths.get(directory, name);
+                    Boolean hidden = (Boolean) Files.getAttribute(path, "dos:hidden", LinkOption.NOFOLLOW_LINKS);
+                    if (hidden != null && !hidden) {
+                        Files.setAttribute(path, "dos:hidden", Boolean.TRUE, LinkOption.NOFOLLOW_LINKS);
+                    }
+                } catch (Exception e) {
+                    // Do nothing
+                }
             }
         }
     }
