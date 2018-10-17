@@ -44,6 +44,7 @@ public class ConnectionToServer extends BaseClient {
 
     /**
      * The tasks that are run in the scheduler
+     *
      * @throws IOException
      * @throws NoSuchAlgorithmException
      */
@@ -200,7 +201,10 @@ public class ConnectionToServer extends BaseClient {
 
         List<String> removedFiles = requestFilesToDeleteFromServer();
 
-        requestFilesFromServer(filesToRequest);
+        requestFilesFromServer(filesToRequest.stream()
+                .filter(x -> !removedFiles.contains(x))
+                .filter(x -> !filesToDelete.contains(x))
+                .collect(Collectors.toList()));
 
         filesToSend.addAll(localFiles.keySet()
                 .stream()
@@ -217,6 +221,7 @@ public class ConnectionToServer extends BaseClient {
 
     /**
      * The conversation function with the server for communicating the deleted files in the follower
+     *
      * @param filesToDelete the set of the names of the deleted files
      * @throws IOException
      */
@@ -234,11 +239,12 @@ public class ConnectionToServer extends BaseClient {
 
     /**
      * The conversation function with the server for communicating the files that exists in the server but not in the follower
+     *
      * @param filesToRequest set of the names of the files for the server to send
      * @throws IOException
      * @throws NoSuchAlgorithmException
      */
-    private void requestFilesFromServer(ArrayList<String> filesToRequest) throws IOException, NoSuchAlgorithmException {
+    private void requestFilesFromServer(List<String> filesToRequest) throws IOException, NoSuchAlgorithmException {
         for (String fileName : filesToRequest) {
             String response = "";
             FileTransmissionModel f = null;
@@ -255,6 +261,7 @@ public class ConnectionToServer extends BaseClient {
 
     /**
      * The conversation function with the server for communicating the files that exists in the follower but not in the server
+     *
      * @param filesToSend the arraylist of the filenames of the files that are needed to be sent
      * @throws IOException
      * @throws NoSuchAlgorithmException
@@ -282,6 +289,7 @@ public class ConnectionToServer extends BaseClient {
 
     /**
      * The conversation function with the server for communicating the files that are deleted in the server
+     *
      * @return the list of the removed files
      * @throws IOException
      */

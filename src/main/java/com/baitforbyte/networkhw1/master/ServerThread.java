@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 class ServerThread extends Thread {
     private static AtomicInteger localClientNumber = new AtomicInteger(1);
@@ -26,6 +27,7 @@ class ServerThread extends Thread {
     private final HashSet<String> deletedFiles;
     private final IFileServer fsServer;
     private final int filePort;
+    private final Server server;
     protected BufferedReader is;
     protected PrintWriter os;
     protected Socket s;
@@ -38,7 +40,8 @@ class ServerThread extends Thread {
      *
      * @param s input socket to create a thread on
      */
-    public ServerThread(Socket s, IFileServer fsServer, int filePort, String directory) {
+    public ServerThread(Server server, Socket s, IFileServer fsServer, int filePort, String directory) {
+        this.server = server;
         this.s = s;
         this.fsServer = fsServer;
         this.filePort = filePort;
@@ -106,13 +109,15 @@ class ServerThread extends Thread {
                     sendToClient("SEND");
                     String fileName = is.readLine();
                     FileUtils.deleteFile(directory, fileName);
+                    server.getToDelete().add(fileName);
                     sendToClient("DELETED");
                 } else if (line.startsWith("REMOVE")) {
                     Set<String> filesToDelete = deletedFiles;
                     filesToDelete.addAll(ChangeTracking.getFilesToDelete(directory, Constants.PREV_FILES_LOG_NAME));
+                    Set<String> copy = new HashSet<>(filesToDelete);
                     sendToClient("SENDING");
                     String response = "";
-                    for (String file : filesToDelete) {
+                    for (String file : copy) {
                         while (!response.equals("DELETED")) {
                             sendToClient(file);
                             response = is.readLine();

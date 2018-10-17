@@ -22,7 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 
 public class Server extends BaseServer {
-    private static final int PERIOD = 30;
+    private static final int PERIOD = 15;
+    private final HashSet<String> toDelete = new HashSet<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final int filePort;
     public int i = 0;
@@ -57,7 +58,8 @@ public class Server extends BaseServer {
                 drive.getFileList();
                 Set<String> changedSet = ChangeTracking.getChangedFiles(directory);
                 Set<String> createdSet = ChangeTracking.getAddedFiles(directory, Constants.PREV_DRIVE_LOG_NAME);
-                Set<String> deletedSet = ChangeTracking.getFilesToDelete(directory, Constants.PREV_DRIVE_LOG_NAME);
+                Set<String> deletedSet = toDelete;
+                toDelete.addAll(ChangeTracking.getFilesToDelete(directory, Constants.PREV_DRIVE_LOG_NAME));
                 drive.detectChanges();
                 for (String s : changedSet) {
                     drive.setChanged(true);
@@ -75,16 +77,19 @@ public class Server extends BaseServer {
                     drive.addChangeLog(s);
                     System.out.println("\"" + s + "\" is added to cloud!\n");
                 }
-                for (String s : deletedSet) {
+                Set<String> deletedSetCopy = new HashSet<>(deletedSet);
+                for (String s : deletedSetCopy) {
                     drive.setChanged(true);
                     System.out.println("Change detected!");
                     System.out.println("Local file \"" + s + "\" is deleted. File will be deleted on cloud!");
                     drive.deleteFile(s);
+                    deletedSet.remove(s);
                     for(ServerThread thread: threads) {
                         thread.getDeletedFiles().add(s);
                     }
                     drive.addChangeLog(s);
                     System.out.println("\"" + s + "\" is deleted from cloud!\n");
+
                 }
                 drive.updateChangeMap();
                 if(!drive.isChanged()) {
@@ -175,11 +180,15 @@ public class Server extends BaseServer {
         Socket s = getServerSocket().accept();
         System.out.println("A connection was established with a client on the address of " + s.getRemoteSocketAddress());
 
-        ServerThread st = new ServerThread(s, fileServer, filePort, directory);
+        ServerThread st = new ServerThread(this, s, fileServer, filePort, directory);
         st.start();
         threads.add(st);
     }
 
     private List<ServerThread> threads = new ArrayList<>();
+
+    public HashSet<String> getToDelete() {
+        return toDelete;
+    }
 }
 
