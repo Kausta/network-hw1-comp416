@@ -309,13 +309,8 @@ public class DriveConnection {
             }
         }
         for (String s : changeMap.keySet()) {
-            if (tmpChangeMap.get(s) == null) {
-                System.out.println("Change detected!");
-                System.out.println("File " + s + " has been deleted from Google Drive.");
-                changed = true;
-                deleteLocalFile(s);
-            } else {
-                if (!tmpChangeMap.get(s).equals(changeMap.get(s))) {
+            if(!changeLog.contains(s)) {
+                if (tmpChangeMap.get(s) == null) {
                     System.out.println("Change detected!");
                     System.out.println("File " + s + " has been deleted from Google Drive.");
                     changed = true;
@@ -323,23 +318,32 @@ public class DriveConnection {
                 } else {
                     if (!tmpChangeMap.get(s).equals(changeMap.get(s))) {
                         System.out.println("Change detected!");
-                        System.out.println("File " + s + " has been modified in Google Drive.");
-                        System.out.println("Local file will be updated.");
-                        downloadFile(s);
-                        System.out.println("File " + s + " has been updated at local folder.\n");
+                        System.out.println("File " + s + " has been deleted from Google Drive.");
                         changed = true;
+                        deleteLocalFile(s);
+                    } else {
+                        if (!tmpChangeMap.get(s).equals(changeMap.get(s))) {
+                            System.out.println("Change detected!");
+                            System.out.println("File " + s + " has been modified in Google Drive.");
+                            System.out.println("Local file will be updated.");
+                            downloadFile(s);
+                            System.out.println("File " + s + " has been updated at local folder.\n");
+                            changed = true;
+                        }
                     }
-                }
-            }    
+                }    
+            }
         }
         for (String s : tmpChangeMap.keySet()) {
-            if (changeMap.get(s) == null) {
-                System.out.println("Change detected!");
-                System.out.println("File " + s + " has been added to Google Drive");
-                System.out.println("It will be downloaded to local folder.");
-                downloadFile(s);
-                System.out.println("File " + s + " has been downloaded to local folder.\n");
-                changed = true;
+            if(!changeLog.contains(s)) {
+                if (changeMap.get(s) == null) {
+                    System.out.println("Change detected!");
+                    System.out.println("File " + s + " has been added to Google Drive");
+                    System.out.println("It will be downloaded to local folder.");
+                    downloadFile(s);
+                    System.out.println("File " + s + " has been downloaded to local folder.\n");
+                    changed = true;
+                }
             }
         }
         String directory = DirectoryUtils.getDirectoryInDesktop(ApplicationConfiguration.getInstance().getFolderName(), ApplicationMode.MASTER);
