@@ -1,7 +1,6 @@
 package com.baitforbyte.networkhw1.shared.file.data;
 
 import com.baitforbyte.networkhw1.follower.FileData;
-import com.baitforbyte.networkhw1.shared.ApplicationConfiguration;
 import com.baitforbyte.networkhw1.shared.util.ApplicationMode;
 
 import java.io.File;
@@ -42,8 +41,9 @@ public final class ChangeTracking {
 
     /**
      * Determine which files should be deleted
+     *
      * @param directory directory of the related server element
-     * @param logFile which log file
+     * @param logFile   which log file
      * @return set of the filesnames of the files that are needed to be deleted
      * @throws NoSuchAlgorithmException
      * @throws IOException
@@ -58,6 +58,7 @@ public final class ChangeTracking {
 
     /**
      * Gets the names of the files in the local folder
+     *
      * @param directory directory of the related server element
      * @return set of the filesnames of the files that are in the directory
      * @throws IOException
@@ -77,6 +78,7 @@ public final class ChangeTracking {
 
     /**
      * Determines which files are changed
+     *
      * @param directory directory of the related server element
      * @return the filenames that are changed
      * @throws NoSuchAlgorithmException
@@ -102,8 +104,9 @@ public final class ChangeTracking {
 
     /**
      * Determines which files are added
+     *
      * @param directory directory of the related server element
-     * @param logFile which log file
+     * @param logFile   which log file
      * @return the names of the files that are added
      * @throws NoSuchAlgorithmException
      * @throws IOException
@@ -119,6 +122,7 @@ public final class ChangeTracking {
 
     /**
      * create the log files if they are not preexistant
+     *
      * @param directory directory of the related server element
      * @throws IOException
      */

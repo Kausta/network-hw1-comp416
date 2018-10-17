@@ -131,8 +131,9 @@ public final class FileUtils {
 
     /**
      * gets the path of a file
+     *
      * @param directory directory of the file
-     * @param filename name of the file
+     * @param filename  name of the file
      * @return the path of the file
      */
     public static Path getPath(String directory, String filename) {
@@ -141,8 +142,9 @@ public final class FileUtils {
 
     /**
      * Reads the log file
+     *
      * @param directory directory of the file
-     * @param fileName name of the file
+     * @param fileName  name of the file
      * @return a set which contains every line of the log file
      */
     public static Set<String> readLog(String directory, String fileName) {
@@ -157,9 +159,10 @@ public final class FileUtils {
 
     /**
      * write to a log file
-     * @param files the strings to be written to the log line by line
+     *
+     * @param files     the strings to be written to the log line by line
      * @param directory directory of the file
-     * @param fileName name of the file
+     * @param fileName  name of the file
      */
     public static void saveLog(Set<String> files, String directory, String fileName) {
         try (BufferedWriter writer = Files.newBufferedWriter(getPath(directory, fileName))) {
@@ -173,8 +176,9 @@ public final class FileUtils {
 
     /**
      * Delete a file
+     *
      * @param directory directory of the file
-     * @param fileName name of the file
+     * @param fileName  name of the file
      */
     public static void deleteFile(String directory, String fileName) {
         try {

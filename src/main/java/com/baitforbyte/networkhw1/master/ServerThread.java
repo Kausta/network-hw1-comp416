@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 class ServerThread extends Thread {
     private static AtomicInteger localClientNumber = new AtomicInteger(1);
@@ -179,6 +178,7 @@ class ServerThread extends Thread {
 
     /**
      * The function to send a string to the client
+     *
      * @param s the string to be sent
      */
     private void sendToClient(String s) {

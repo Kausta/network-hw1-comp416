@@ -53,6 +53,7 @@ public final class ApplicationConfiguration {
 
     /**
      * Checks whether the given socket was opened on the same computer
+     *
      * @param socket Socket to check
      * @return Whether the socket is from localhost
      */

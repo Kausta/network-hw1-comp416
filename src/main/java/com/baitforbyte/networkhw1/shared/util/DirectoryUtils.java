@@ -16,6 +16,7 @@ public final class DirectoryUtils {
 
     /**
      * Returns the user home directory
+     *
      * @return User home directory
      */
     public static String getHomeDirectory() {
@@ -24,6 +25,7 @@ public final class DirectoryUtils {
 
     /**
      * Returns the desktop directory for the user
+     *
      * @return Desktop directory
      */
     public static String getDesktopDirectory() {
@@ -34,7 +36,7 @@ public final class DirectoryUtils {
      * Returns a directory in the desktop, also creates it if it is absent, and creates the appropriate log files in it
      *
      * @param directory Directory to get ( and create )
-     * @param mode Whether we are server or client
+     * @param mode      Whether we are server or client
      * @return Path of the directory
      */
     public static String getDirectoryInDesktop(String directory, ApplicationMode mode) {

@@ -9,7 +9,7 @@ import java.util.HashMap;
 
 /**
  * Class for handling file server connections and starting threads for them
- *
+ * <p>
  * Also holds the identifier, file server thread relation
  */
 public class FileServer extends BaseServer implements IFileServer {
@@ -29,6 +29,7 @@ public class FileServer extends BaseServer implements IFileServer {
 
     /**
      * Listens to new socket connections, accepts them and start them
+     *
      * @return The newly opened socket connection
      * @throws IOException if there were an error opening the connection
      */
@@ -43,6 +44,7 @@ public class FileServer extends BaseServer implements IFileServer {
 
     /**
      * Get the file server thread with the given identifier
+     *
      * @param identifier Identifier for the file server thread
      * @return File server thread
      */
@@ -53,8 +55,9 @@ public class FileServer extends BaseServer implements IFileServer {
 
     /**
      * Registers a file client with the given identifier
+     *
      * @param identifier Identifier for the client
-     * @param fsThread Thread for the client
+     * @param fsThread   Thread for the client
      */
     public void addClient(String identifier, FileServerThread fsThread) {
         fsRegistry.put(identifier, fsThread);
@@ -62,6 +65,7 @@ public class FileServer extends BaseServer implements IFileServer {
 
     /**
      * Removes the file client with the given identifier
+     *
      * @param identifier Identifier for the client
      */
     public void removeClient(String identifier) {

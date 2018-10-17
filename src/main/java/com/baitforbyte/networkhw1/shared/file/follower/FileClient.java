@@ -69,7 +69,7 @@ public class FileClient extends BaseClient implements IFileClient {
     public FileTransmissionModel tryReceiveFile() throws IOException {
         validateConnection();
         System.out.println("Trying to receive file");
-        FileTransmissionModel model =  FileUtils.readFromStream(new ObjectInputStream(this.is));
+        FileTransmissionModel model = FileUtils.readFromStream(new ObjectInputStream(this.is));
         System.out.println("Received file");
         return model;
     }

@@ -33,9 +33,10 @@ public class FileServerThread extends IFileServerThread {
 
     /**
      * Initiate the file server thread with the given socket and file server
-     *
+     * <p>
      * It only requires file server instance to add the client together with its identifier or remove it
-     * @param s Socket that was opened by file server
+     *
+     * @param s      Socket that was opened by file server
      * @param server File server
      * @throws IOException If there were a problem getting the identifier
      */
