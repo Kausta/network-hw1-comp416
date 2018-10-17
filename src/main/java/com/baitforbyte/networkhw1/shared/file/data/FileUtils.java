@@ -159,7 +159,7 @@ public final class FileUtils {
      * write to a log file
      * @param files the strings to be written to the log line by line
      * @param directory directory of the file
-     * @param filename name of the file
+     * @param fileName name of the file
      */
     public static void saveLog(Set<String> files, String directory, String fileName) {
         try (BufferedWriter writer = Files.newBufferedWriter(getPath(directory, fileName))) {
@@ -174,7 +174,7 @@ public final class FileUtils {
     /**
      * Delete a file
      * @param directory directory of the file
-     * @param filename name of the file
+     * @param fileName name of the file
      */
     public static void deleteFile(String directory, String fileName) {
         try {
