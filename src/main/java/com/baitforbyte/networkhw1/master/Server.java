@@ -60,7 +60,6 @@ public class Server extends BaseServer {
                 Set<String> createdSet = ChangeTracking.getAddedFiles(directory, Constants.PREV_DRIVE_LOG_NAME);
                 Set<String> deletedSet = toDelete;
                 toDelete.addAll(ChangeTracking.getFilesToDelete(directory, Constants.PREV_DRIVE_LOG_NAME));
-                drive.detectChanges();
                 for (String s : changedSet) {
                     drive.setChanged(true);
                     System.out.println("Change detected!");
@@ -91,6 +90,7 @@ public class Server extends BaseServer {
                     System.out.println("\"" + s + "\" is deleted from cloud!\n");
 
                 }
+                drive.detectChanges();
                 drive.updateChangeMap();
                 if(!drive.isChanged()) {
                     System.out.println("No change is detected in this cycle!\n");
