@@ -3,6 +3,7 @@ package com.baitforbyte.networkhw1;
 import com.baitforbyte.networkhw1.follower.FollowerApplication;
 import com.baitforbyte.networkhw1.master.MasterApplication;
 import com.baitforbyte.networkhw1.shared.util.ApplicationMode;
+import com.baitforbyte.networkhw1.shared.util.ConnectionMode;
 import com.baitforbyte.networkhw1.shared.util.Input;
 
 import java.security.GeneralSecurityException;
@@ -47,13 +48,16 @@ public class EntryPoint {
      * @throws GeneralSecurityException
      */
     public void run() throws GeneralSecurityException {
-        System.out.println("===  Welcome to DriveCloud   ===");
-        System.out.println("===  We sync all your files  ===");
-        System.out.println("================================");
+        System.out.println("===================================");
+        System.out.println("===  Welcome to Llama Protocol  ===");
+        System.out.println("===  We secure your connection  ===");
+        System.out.println("===================================");
         System.out.println();
         ApplicationMode mode = Input.getInstance().getApplicationMode(args.length > 0 ? args[0] : null);
+        ConnectionMode connectionMode = Input.getInstance().getConnectionMode(args.length > 0 ? args[0] : null);
 
-        System.out.println("Starting in " + mode.name().toLowerCase() + " mode ...");
+        System.out.println("\nStarting in " + mode.name().toLowerCase() + " application mode with the " + connectionMode.name().toLowerCase() + " connection mode ...");
+        /*
         switch (mode) {
             case MASTER:
                 this.runMaster();
@@ -61,7 +65,7 @@ public class EntryPoint {
             case FOLLOWER:
                 this.runFollower();
                 break;
-        }
+        }*/
     }
 
     public Scanner getInput() {
