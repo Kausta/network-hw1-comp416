@@ -10,9 +10,9 @@ import java.security.KeyStore;
 
 public class SSLServer extends Thread {
 
-  private final String SERVER_KEYSTORE_FILE = "llamaprotocol.jks";
-  private final String SERVER_KEYSTORE_PASSWORD = "LlamaProtocol";
-  private final String SERVER_KEY_PASSWORD = "LlamaProtocol";
+  private final String SERVER_KEYSTORE_FILE = "server.jks";
+  private final String SERVER_KEYSTORE_PASSWORD = "123456";
+  private final String SERVER_KEY_PASSWORD = "123456";
   private SSLServerSocket sslServerSocket;
   private SSLServerSocketFactory sslServerSocketFactory;
   // private ServerControlPanel serverControlPanel;

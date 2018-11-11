@@ -12,11 +12,11 @@ public class SSLConnectionToServer {
     /*
     Name of key store file
      */
-    private final String KEY_STORE_NAME =  "clientkeystore";
+    private final String KEY_STORE_NAME =  "client.jks";
     /*
     Password to the key store file
      */
-    private final String KEY_STORE_PASSWORD = "storepass";
+    private final String KEY_STORE_PASSWORD = "123456";
     private SSLSocketFactory sslSocketFactory;
     private SSLSocket sslSocket;
     private BufferedReader is;
