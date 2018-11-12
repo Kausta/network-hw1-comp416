@@ -3,9 +3,9 @@ plugins {
 }
 apply plugin: 'application'
 
-group 'com.baitforbyte'
+group 'com.llamas'
 version '1.0-SNAPSHOT'
-mainClassName = "com.baitforbyte.networkhw1.EntryPoint"
+mainClassName = "com.llamas.networkhw2.EntryPoint"
 
 sourceCompatibility = 1.8
 
