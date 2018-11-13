@@ -44,6 +44,7 @@ public class SSLServer extends Thread {
     sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket(port);
 
     System.out.println("SSL server is up and running on port " + port);
+    System.out.println("--------------------");
     while (true) {
       listenAndAccept();
     }
@@ -58,9 +59,9 @@ public class SSLServer extends Thread {
       try
       {
           s = (SSLSocket) sslServerSocket.accept();
-          System.out.println("An SSL connection was established with a client on the address of " + s.getRemoteSocketAddress());
           SSLServerThread st = new SSLServerThread(s);
           st.start();
+          System.out.println("An SSL connection was established with a client on the address of " + s.getRemoteSocketAddress());
 
       }
 

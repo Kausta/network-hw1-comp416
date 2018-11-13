@@ -52,13 +52,14 @@ public class SSLConnectionToServer {
                 os= new PrintWriter(sslSocket.getOutputStream());
                 System.out.println("Successfully connected to " + serverAddress + " on port " + serverPort);
                 while(line.compareTo("QUIT!") != 0) {
+                    System.out.println("--------------------");
                     System.out.print("Enter your message: ");
                     Scanner sc = new Scanner(System.in);
                     line = sc.nextLine();
                     os.println(line);
                     os.flush();
-                    //String response = is.readLine();
-                    //System.out.println("Response: " + response);
+                    String response = is.readLine();
+                    System.out.println("Server " + sslSocket.getRemoteSocketAddress() + " sent : " + response);
                 }
                 System.out.println("Quit command is received. Disconnecting..");
                 disconnect();

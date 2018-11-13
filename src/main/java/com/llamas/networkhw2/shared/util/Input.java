@@ -107,7 +107,7 @@ public final class Input {
     public ConnectionMode getConnectionMode(String arg) {
         ConnectionMode mode = arg != null ? parseConnectionMode(arg) : null;
         while (mode == null) {
-            System.out.println("\n\nPlease choose connection mode: ( [S]SL, [T]CP ): ");
+            System.out.print("Please choose connection mode: ( [S]SL, [T]CP ): ");
             mode = parseConnectionMode(input.nextLine());
             if (mode == null) {
                 System.out.println("You entered an invalid connection mode.");
