@@ -40,10 +40,10 @@ public class EntryPoint {
         System.out.println("Starting in " + connectionMode.name().toLowerCase() + " connection mode ...");
         switch (mode) {
             case MASTER:
-                this.runMaster();
+                this.runMaster(connectionMode);
                 break;
             case FOLLOWER:
-                this.runFollower();
+                this.runFollower(connectionMode);
                 break;
         }
     }
@@ -52,7 +52,7 @@ public class EntryPoint {
         return input;
     }
 
-    public void runMaster() throws GeneralSecurityException {
+    public void runMaster(ConnectionMode mode) throws GeneralSecurityException {
         int port;
         if (args.length > 1) {
             port = Integer.parseInt(args[1]);
@@ -61,14 +61,14 @@ public class EntryPoint {
         }
         System.out.println("Starting in port: " + port);
 
-        MasterApplication application = new MasterApplication(port);
+        MasterApplication application = new MasterApplication(port, mode);
         application.run();
     }
 
     /**
      * Runs the follower application by getting an ip and a port
      */
-    public void runFollower() {
+    public void runFollower(ConnectionMode mode) {
         String ip;
         int port;
         if (args.length > 2) {
@@ -80,7 +80,7 @@ public class EntryPoint {
         }
         System.out.println("Connecting to " + ip + ":" + port + "");
 
-        FollowerApplication application = new FollowerApplication(ip, port);
+        FollowerApplication application = new FollowerApplication(ip, port, mode);
         application.run();
     }
 }
