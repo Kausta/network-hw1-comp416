@@ -29,8 +29,8 @@ public class SSLServer extends Thread {
      * Key management of the server
      */
     char ksPass[] = SERVER_KEYSTORE_PASSWORD.toCharArray();
-    System.out.println(System.getProperty("user.dir"));
-    System.out.println(new FileInputStream(SERVER_KEYSTORE_FILE));
+    //System.out.println(System.getProperty("user.dir"));
+    //System.out.println(new FileInputStream(SERVER_KEYSTORE_FILE));
     KeyStore ks = KeyStore.getInstance("JKS");
     ks.load(new FileInputStream(SERVER_KEYSTORE_FILE), ksPass);
     KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
