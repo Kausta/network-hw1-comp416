@@ -54,12 +54,14 @@ public class SSLConnectionToServer {
                 while(line.compareTo("QUIT!") != 0) {
                     System.out.print("Enter your message: ");
                     Scanner sc = new Scanner(System.in);
-                    String line = sc.nextLine();
+                    line = sc.nextLine();
                     os.println(line);
                     os.flush();
                     //String response = is.readLine();
                     //System.out.println("Response: " + response);
                 }
+                System.out.println("Quit command is received. Disconnecting..");
+                disconnect();
             }
         catch (Exception e)
             {
@@ -79,6 +81,7 @@ public class SSLConnectionToServer {
         is.close();
         os.close();
         sslSocket.close();
+        System.out.println("Disconnected!");
     }
 }
 
