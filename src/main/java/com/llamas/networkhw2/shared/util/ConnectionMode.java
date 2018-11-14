@@ -11,5 +11,5 @@ public enum ConnectionMode {
     /**
      * Transfering data with TCP Connection
      */
-    TCP
+    TCP,
 }

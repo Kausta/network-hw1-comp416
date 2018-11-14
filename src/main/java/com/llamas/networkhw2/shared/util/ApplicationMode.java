@@ -11,5 +11,5 @@ public enum ApplicationMode {
     /**
      * Running as follower application
      */
-    FOLLOWER
+    FOLLOWER,
 }

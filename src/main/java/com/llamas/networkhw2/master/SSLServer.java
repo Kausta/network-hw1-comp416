@@ -2,13 +2,15 @@ package com.llamas.networkhw2.master;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.*;
 
 import javax.net.ssl.*;
+
+import com.llamas.networkhw2.shared.base.BaseServer;
+
 import java.io.FileInputStream;
 import java.security.KeyStore;
 
-public class SSLServer extends Thread {
+public class SSLServer{
 
   private final String SERVER_KEYSTORE_FILE = "server.jks";
   private final String SERVER_KEYSTORE_PASSWORD = "123456";
@@ -59,7 +61,7 @@ public class SSLServer extends Thread {
       try
       {
           s = (SSLSocket) sslServerSocket.accept();
-          SSLServerThread st = new SSLServerThread(s);
+          ServerThread st = new ServerThread(s);
           st.start();
           System.out.println("An SSL connection was established with a client on the address of " + s.getRemoteSocketAddress());
 
@@ -72,5 +74,4 @@ public class SSLServer extends Thread {
       }
   }
 
-  private List<SSLServerThread> threads = new ArrayList<>();
 }

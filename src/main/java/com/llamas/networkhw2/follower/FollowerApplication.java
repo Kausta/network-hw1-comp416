@@ -34,7 +34,7 @@ public class FollowerApplication {
             connectionToServer.connect();
 
             while (true) {
-                Thread.sleep(5);
+                Thread.sleep(10);
             }
         } catch (IOException | InterruptedException ex) {
             ex.printStackTrace();
@@ -56,6 +56,7 @@ public class FollowerApplication {
             connectionToServer.connect();
 
             while (true) {
+                System.out.println("woooo");
                 Thread.sleep(5);
             }
         } catch (IOException | InterruptedException ex) {

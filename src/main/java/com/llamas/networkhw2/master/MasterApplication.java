@@ -1,6 +1,5 @@
 package com.llamas.networkhw2.master;
 
-import com.llamas.networkhw2.shared.file.master.FileServer;
 import com.llamas.networkhw2.shared.util.ConnectionMode;
 
 import java.io.IOException;
@@ -8,7 +7,6 @@ import java.security.GeneralSecurityException;
 
 public class MasterApplication {
     private int port;
-    private int filePort;
     private ConnectionMode mode;
 
     public MasterApplication(int port, ConnectionMode mode) {
@@ -25,7 +23,6 @@ public class MasterApplication {
                 runTCPServer();
                 break;
         }
-
     }
 
     private void runSSLServer() throws GeneralSecurityException {

@@ -8,10 +8,11 @@ import java.sql.*;
  */
 public class SQLiteDatabase{
     private Connection connection;
-    private String url;
+    private String url, name;
 
     public SQLiteDatabase(String name){
-        url = "jdbc:sqlite:" + Paths.get("").toAbsolutePath().toString() + "/db/" + name;
+        this.name = name;
+        url = "jdbc:sqlite:" + Paths.get("").toAbsolutePath().toString() + "/db/test.db";
         connection = connectToDatabase();
         prepareTable();
     }
@@ -31,7 +32,7 @@ public class SQLiteDatabase{
 
     public void prepareTable() {
         
-        String sql = "CREATE TABLE IF NOT EXISTS data (\n"
+        String sql = "CREATE TABLE IF NOT EXISTS '" + name + "' (\n"
                 + "	key text PRIMARY KEY,\n"
                 + "	value text NOT NULL\n"
                 + ");";
@@ -41,15 +42,14 @@ public class SQLiteDatabase{
     }
 
     public void create(String key, String value) {
-        String sql = "INSERT INTO data(key,value) VALUES('" + key + "','" + value + "')";
-        
+        // TODO: existing key should update instead of create
+        String sql = "INSERT INTO '" + name + "'(key,value) VALUES('" + key + "','" + value + "')";
         execute(sql);
     }
 
     public String retrieve(String key){
-        String value = "No value";
-        String sql = "SELECT value FROM data WHERE key='" + key + "';";
-        
+        String value = null;
+        String sql = "SELECT value FROM '" + name + "' WHERE key='" + key + "';";
         try (Statement stmt  = connection.createStatement();
              ResultSet rs    = stmt.executeQuery(sql)){
             if(!rs.isClosed())
@@ -61,15 +61,14 @@ public class SQLiteDatabase{
     }
 
     public void update(String key, String value) {
-        String sql = "UPDATE data SET value = '" + value
+        String sql = "UPDATE '" + name + "' SET value = '" + value
                 + "' WHERE key = '" + key + "';";
- 
+        
         execute(sql);
     }
 
     public void delete(String key) {
-        String sql = "DELETE FROM data WHERE key = '" + key + "';";
- 
+        String sql = "DELETE FROM '" + name + "' WHERE key = '" + key + "';";
         execute(sql);
     }
 
