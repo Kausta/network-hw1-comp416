@@ -29,8 +29,8 @@ public class SSLServer extends Thread {
      * Key management of the server
      */
     char ksPass[] = SERVER_KEYSTORE_PASSWORD.toCharArray();
-    System.out.println(System.getProperty("user.dir"));
-    System.out.println(new FileInputStream(SERVER_KEYSTORE_FILE));
+    //System.out.println(System.getProperty("user.dir"));
+    //System.out.println(new FileInputStream(SERVER_KEYSTORE_FILE));
     KeyStore ks = KeyStore.getInstance("JKS");
     ks.load(new FileInputStream(SERVER_KEYSTORE_FILE), ksPass);
     KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
@@ -44,6 +44,7 @@ public class SSLServer extends Thread {
     sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket(port);
 
     System.out.println("SSL server is up and running on port " + port);
+    System.out.println("--------------------");
     while (true) {
       listenAndAccept();
     }
@@ -58,9 +59,9 @@ public class SSLServer extends Thread {
       try
       {
           s = (SSLSocket) sslServerSocket.accept();
-          System.out.println("An SSL connection was established with a client on the address of " + s.getRemoteSocketAddress());
           SSLServerThread st = new SSLServerThread(s);
           st.start();
+          System.out.println("An SSL connection was established with a client on the address of " + s.getRemoteSocketAddress());
 
       }
 

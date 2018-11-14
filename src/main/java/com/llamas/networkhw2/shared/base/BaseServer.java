@@ -15,7 +15,7 @@ public abstract class BaseServer {
     public BaseServer(int port) throws ConnectionException {
         try {
             serverSocket = new ServerSocket(port);
-            System.out.println("Opened up a server socket on " + Inet4Address.getLocalHost());
+            // System.out.println("Opened up a server socket on " + Inet4Address.getLocalHost());
         } catch (IOException e) {
             throw new ConnectionException("Cannot open a socket on port " + port, e);
         }

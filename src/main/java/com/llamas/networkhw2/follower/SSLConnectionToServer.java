@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.util.Scanner;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -21,6 +22,8 @@ public class SSLConnectionToServer {
     private SSLSocket sslSocket;
     private BufferedReader is;
     private PrintWriter os;
+
+    private String line = new String();
 
     protected String serverAddress;
     protected int serverPort;
@@ -48,6 +51,18 @@ public class SSLConnectionToServer {
                 is=new BufferedReader(new InputStreamReader(sslSocket.getInputStream()));
                 os= new PrintWriter(sslSocket.getOutputStream());
                 System.out.println("Successfully connected to " + serverAddress + " on port " + serverPort);
+                while(line.compareTo("QUIT!") != 0) {
+                    System.out.println("--------------------");
+                    System.out.print("Enter your message: ");
+                    Scanner sc = new Scanner(System.in);
+                    line = sc.nextLine();
+                    os.println(line);
+                    os.flush();
+                    String response = is.readLine();
+                    System.out.println("Server " + sslSocket.getRemoteSocketAddress() + " sent : " + response);
+                }
+                System.out.println("Quit command is received. Disconnecting..");
+                disconnect();
             }
         catch (Exception e)
             {
@@ -67,6 +82,7 @@ public class SSLConnectionToServer {
         is.close();
         os.close();
         sslSocket.close();
+        System.out.println("Disconnected!");
     }
 }
 

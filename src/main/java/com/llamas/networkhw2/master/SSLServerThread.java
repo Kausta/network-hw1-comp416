@@ -8,7 +8,8 @@ class SSLServerThread extends Thread {
     private SSLSocket sslSocket;
     private String line = new String();
     private BufferedReader is;
-    private BufferedWriter os;
+    //private BufferedWriter os;
+    private PrintWriter os;
     /**
      * Creates a server thread on the input socket
      *
@@ -25,8 +26,9 @@ class SSLServerThread extends Thread {
         try
         {
             is = new BufferedReader(new InputStreamReader(sslSocket.getInputStream()));
-            os = new BufferedWriter(new OutputStreamWriter(sslSocket.getOutputStream()));
-
+            //os = new BufferedWriter(new OutputStreamWriter(sslSocket.getOutputStream()));
+            // Do we really need BufferedWriter over PrintWriter?
+            os = new PrintWriter(sslSocket.getOutputStream());
         }
         catch (IOException e)
         {
@@ -35,12 +37,14 @@ class SSLServerThread extends Thread {
 
         try
         {
-            line = is.readLine();
-            os.write(SERVER_ACK_MESSAGE);
-            os.flush();
-            System.out.println("Client " + sslSocket.getRemoteSocketAddress() + " sent : " + line);
-
-
+            while (line.compareTo("QUIT!") != 0) {
+                line = is.readLine();
+                //os.write(SERVER_ACK_MESSAGE);
+                //os.flush();
+                os.println(SERVER_ACK_MESSAGE);
+                os.flush();
+                System.out.println("Client " + sslSocket.getRemoteSocketAddress() + " sent : " + line);
+            }
         }
         catch (IOException e)
         {
