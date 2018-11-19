@@ -42,9 +42,14 @@ public class SQLiteDatabase{
     }
 
     public void create(String key, String value) {
-        // TODO: existing key should update instead of create
-        String sql = "INSERT INTO '" + name + "'(key,value) VALUES('" + key + "','" + value + "')";
-        execute(sql);
+        String val = retrieve(key);
+        String sql;
+        if(val == null){
+            sql = "INSERT INTO '" + name + "'(key,value) VALUES('" + key + "','" + value + "')";
+            execute(sql);
+        }else{
+            update(key, value);
+        }
     }
 
     public String retrieve(String key){

@@ -23,8 +23,7 @@ public class ServerThread extends Thread {
         this.s = s;
         String ip = s.getInetAddress().toString().replace(".", "").replace("/", "");
         System.out.println(ip);
-        db = new SQLiteDatabase("data" + ip);
-
+        db = new SQLiteDatabase("data");
     }
 
     public void run() {
@@ -50,7 +49,6 @@ public class ServerThread extends Thread {
             System.out.println("Client " + s.getRemoteSocketAddress() + " sent : " + line);
             switch (message[0].toLowerCase()) {
               case "submit":
-              System.out.println("in submit");
                 db.create(message[1], message[2]);
                 sendMessage("OK");
                 break;
