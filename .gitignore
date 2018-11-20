@@ -177,3 +177,5 @@ gradle-app.setting
 
 # End of https://www.gitignore.io/api/gradle,eclipse,intellij,visualstudiocode
 
+db/*
+.vscode/launch.json

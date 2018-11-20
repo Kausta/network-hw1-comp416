@@ -1,9 +1,13 @@
 # Network Homework 1 - DriveCloud
 
-Comp 416 HW1 DriveCloud project preapared by: 
+Comp 416 HW2 DriveCloud project preapared by: 
 - Cüneyt Emre Yavuz
 - Alper Toygar
-- Caner Korkmaz
+
+# Special Thanks
+
+This project is forked from a previous project that is prepared with Caner Korkmaz 
+and various parts of the code belongs to him and used with his consent.
 
 ## LICENSE
 

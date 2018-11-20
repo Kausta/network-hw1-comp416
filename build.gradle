@@ -3,9 +3,9 @@ plugins {
 }
 apply plugin: 'application'
 
-group 'com.baitforbyte'
+group 'com.llamas'
 version '1.0-SNAPSHOT'
-mainClassName = "com.baitforbyte.networkhw1.EntryPoint"
+mainClassName = "com.llamas.networkhw2.EntryPoint"
 
 sourceCompatibility = 1.8
 
@@ -14,11 +14,8 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.google.api-client:google-api-client:1.23.0'
-    implementation 'com.google.oauth-client:google-oauth-client-jetty:1.23.0'
-    implementation 'com.google.apis:google-api-services-drive:v3-rev110-1.23.0'
-    implementation 'com.google.http-client:google-http-client:1.23.0'
-    implementation 'com.google.http-client:google-http-client-jackson2:1.23.0'
+    implementation 'commons-net:commons-net:3.6'
+    implementation 'org.xerial:sqlite-jdbc:3.23.1'
     testImplementation('org.junit.jupiter:junit-jupiter-api:5.1.0')
     testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.1.0')
 }
